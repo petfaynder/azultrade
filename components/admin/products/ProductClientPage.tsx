@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Eye, Edit, Trash2, Search, Filter, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import type { Category, Product } from "@/lib/types"
+import type { Category, Product } from "@/lib/database"
 
 interface ProductFormProps {
   formData: {

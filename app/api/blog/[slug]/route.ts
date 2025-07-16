@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getBlogPost, incrementBlogViews } from "@/lib/database"
+import { getBlogPostBySlug, incrementBlogViews } from "@/lib/database"
 
 export async function GET(
   request: NextRequest,
@@ -11,7 +11,7 @@ export async function GET(
       return NextResponse.json({ error: "Slug is required" }, { status: 400 })
     }
 
-    const post = await getBlogPost(slug)
+    const post = await getBlogPostBySlug(slug)
 
     if (!post) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 })

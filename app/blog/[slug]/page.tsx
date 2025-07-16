@@ -43,14 +43,17 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
     if (!post || liked) return
 
     try {
-      // Note: Like functionality uses post.id, not slug.
-      const response = await fetch(`/api/blog/${post.id}/like`, {
+      const response = await fetch(`/api/blog/like`, {
         method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: post.id }),
       })
 
       if (response.ok) {
-        const data = await response.json()
-        setPost((prevPost) => prevPost ? { ...prevPost, likes: data.likes } : null)
+        // Optimistically update the UI
+        setPost((prevPost) => prevPost ? { ...prevPost, likes: prevPost.likes + 1 } : null)
         setLiked(true)
       }
     } catch (error) {
