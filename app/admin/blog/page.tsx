@@ -104,7 +104,7 @@ export default function BlogAdmin() {
     }
 
     setSubmitting(true)
-    const apiEndpoint = isEditing ? `/api/blog/${postData.id}` : "/api/blog"
+    const apiEndpoint = isEditing ? `/api/admin/blog/${postData.id}` : "/api/blog"
     const method = isEditing ? "PUT" : "POST"
 
     const payload = {
@@ -141,7 +141,7 @@ export default function BlogAdmin() {
     if (!confirm("Are you sure you want to delete this blog post?")) return
 
     try {
-      const response = await fetch(`/api/blog/${id}`, { method: "DELETE" })
+      const response = await fetch(`/api/admin/blog/${id}`, { method: "DELETE" })
       if (response.ok) {
         toast({ title: "Success", description: "Blog post deleted successfully!" })
         fetchPosts()
