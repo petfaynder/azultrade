@@ -55,15 +55,17 @@ export function Footer() {
             <h4 className="text-lg font-semibold">Our Services</h4>
             <ul className="space-y-2">
               {[
-                "Global Market Access",
-                "Quality Assurance",
-                "Logistics Excellence",
-                "Export Documentation",
-                "Technical Support",
-                "Custom Solutions",
+                { name: "Global Market Access", href: "/services/global-market-access" },
+                { name: "Quality Assurance", href: "/services/quality-assurance" },
+                { name: "Logistics Excellence", href: "/services/logistics-excellence" },
+                { name: "Export Documentation", href: "/services/export-documentation" },
+                { name: "Technical Support", href: "/services/technical-support" },
+                { name: "Custom Solutions", href: "/services/custom-solutions" },
               ].map((service) => (
-                <li key={service}>
-                  <span className="text-slate-300">{service}</span>
+                <li key={service.name}>
+                  <Link href={service.href} className="text-slate-300 hover:text-white transition-colors duration-200">
+                    {service.name}
+                  </Link>
                 </li>
               ))}
             </ul>

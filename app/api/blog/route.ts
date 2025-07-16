@@ -22,6 +22,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const generateSlug = (title: string) => {
+  return title
+    .toLowerCase()
+    .replace(/ /g, "-")
+    .replace(/[^\w-]+/g, "");
+};
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -33,9 +40,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields: title, content, author, category" }, { status: 400 })
     }
 
+    // Generate slug from title
+    const slug = generateSlug(body.title);
+
     // Ensure status is set
     const postData = {
       ...body,
+      slug,
       status: body.status || "published",
     }
 

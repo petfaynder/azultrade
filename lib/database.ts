@@ -37,6 +37,7 @@ export interface Product {
 export interface BlogPost {
   id: string
   title: string
+  slug: string
   excerpt: string
   content: string
   author: string
@@ -50,7 +51,7 @@ export interface BlogPost {
   comments: number
   status: string
   publish_date: string
-  read_time: string // Yeni eklendi
+  read_time: string
   created_at: string
   updated_at: string
 }
@@ -80,10 +81,6 @@ export async function getCategories(filters?: { sortBy?: string; sortOrder?: "as
       throw new Error(`Database error: ${error.message}`)
     }
 
-    if (error) {
-      console.error("Database error in getCategories (fetching categories):", error)
-      throw new Error(`Database error: ${error.message}`)
-    }
 
     // Fetch product counts separately
     const { data: productCountsData, error: productCountsError } = await supabase.rpc("get_category_product_counts")
@@ -384,18 +381,34 @@ export async function getBlogPosts(filters?: { category?: string; search?: strin
   }
 }
 
-export async function getBlogPost(id: string) {
+export async function getBlogPostBySlug(slug: string) {
   try {
-    const { data, error } = await supabase.from("blog_posts").select("*").eq("id", id).single()
+    const { data, error } = await supabase.from("blog_posts").select("*").eq("slug", slug).single()
 
     if (error) {
-      console.error("Database error in getBlogPost:", error)
+      console.error("Database error in getBlogPostBySlug:", error)
       throw new Error(`Database error: ${error.message}`)
     }
 
     return data as BlogPost
   } catch (error) {
-    console.error("Error in getBlogPost:", error)
+    console.error("Error in getBlogPostBySlug:", error)
+    throw error
+  }
+}
+
+export async function getBlogPostById(id: string) {
+  try {
+    const { data, error } = await supabase.from("blog_posts").select("*").eq("id", id).single()
+
+    if (error) {
+      console.error("Database error in getBlogPostById:", error)
+      throw new Error(`Database error: ${error.message}`)
+    }
+
+    return data as BlogPost
+  } catch (error) {
+    console.error("Error in getBlogPostById:", error)
     throw error
   }
 }

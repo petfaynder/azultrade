@@ -141,7 +141,7 @@ export default function BlogPage() {
                             {post.likes}
                           </div>
                         </div>
-                        <Link href={`/blog/${post.id}`}>
+                        <Link href={`/blog/${post.slug}`}>
                           <Button variant="outline" size="sm">
                             Read More
                             <ArrowRight className="ml-2 h-4 w-4" />
@@ -263,7 +263,7 @@ export default function BlogPage() {
                             </div>
                             <span className="text-sm text-gray-500">{post.read_time}</span>
                           </div>
-                          <Link href={`/blog/${post.id}`} className="block">
+                          <Link href={`/blog/${post.slug}`} className="block">
                             <Button className="w-full bg-purple-600 hover:bg-purple-700">
                               Read Article
                               <ArrowRight className="ml-2 h-4 w-4" />
