@@ -1,0 +1,308 @@
+import { notFound } from "next/navigation"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Eye, Play } from "lucide-react"
+import { getProduct, incrementProductViews } from "@/lib/database"
+import type { Product } from "@/lib/database"
+import ProductActions from "@/components/product-actions"
+
+interface ProductPageProps {
+  params: {
+    id: string
+  }
+}
+
+function getYouTubeEmbedUrl(url: string): string | null {
+  const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/
+  const match = url.match(regex)
+  return match ? `https://www.youtube.com/embed/${match[1]}` : null
+}
+
+function isVideoUrl(url: string): boolean {
+  return (
+    url.includes("youtube.com") ||
+    url.includes("youtu.be") ||
+    url.endsWith(".mp4") ||
+    url.endsWith(".webm") ||
+    url.endsWith(".ogg")
+  )
+}
+
+export default async function ProductPage({ params }: ProductPageProps) {
+  let product
+  const { id } = await params
+
+  try {
+    product = await getProduct(id)
+    if (!product) {
+      notFound()
+    }
+
+    // Increment views
+    await incrementProductViews(id)
+  } catch (error) {
+    console.error("Error fetching product:", error)
+    notFound()
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Breadcrumb */}
+        <nav className="flex items-center space-x-2 text-sm text-slate-600 mb-8">
+          <a href="/" className="hover:text-blue-600">
+            Home
+          </a>
+          <span>/</span>
+          <a href="/products" className="hover:text-blue-600">
+            Products
+          </a>
+          <span>/</span>
+          <span className="text-slate-900">{product.name}</span>
+        </nav>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Product Images/Videos Gallery */}
+          <div className="space-y-6">
+            {/* Main Image/Video Display */}
+            <Card className="overflow-hidden">
+              <CardContent className="p-0">
+                {product.images.length > 0 ? (
+                  <div className="aspect-square bg-slate-100 flex items-center justify-center">
+                    <img
+                      src={product.images && product.images.length > 0 ? product.images[0] : "/placeholder.svg"}
+                      alt={product.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="aspect-square bg-slate-100 flex items-center justify-center">
+                    <div className="text-slate-400 text-center">
+                      <div className="text-4xl mb-2">📦</div>
+                      <div>No Image Available</div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Image Gallery */}
+            {product.images.length > 1 && (
+              <div className="grid grid-cols-4 gap-4">
+                {product.images.slice(1).map((image, index) => (
+                  <Card key={index} className="overflow-hidden cursor-pointer hover:ring-2 hover:ring-blue-500">
+                    <CardContent className="p-0">
+                      <div className="aspect-square bg-slate-100">
+                        <img
+                          src={image || "/placeholder.svg"}
+                          alt={`${product.name} - Image ${index + 2}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Video Section */}
+            {product.videos.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                  <Play className="h-5 w-5" />
+                  Product Videos
+                </h3>
+                <div className="grid gap-4">
+                  {product.videos.map((video, index) => {
+                    const embedUrl = getYouTubeEmbedUrl(video)
+
+                    if (embedUrl) {
+                      return (
+                        <Card key={index} className="overflow-hidden">
+                          <CardContent className="p-0">
+                            <div className="aspect-video">
+                              <iframe
+                                src={embedUrl}
+                                title={`${product.name} - Video ${index + 1}`}
+                                className="w-full h-full"
+                                allowFullScreen
+                              />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    } else if (isVideoUrl(video)) {
+                      return (
+                        <Card key={index} className="overflow-hidden">
+                          <CardContent className="p-0">
+                            <div className="aspect-video">
+                              <video controls className="w-full h-full" src={video}>
+                                Your browser does not support the video tag.
+                              </video>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    } else {
+                      return (
+                        <Card key={index} className="p-4">
+                          <a
+                            href={video}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+                          >
+                            <Play className="h-4 w-4" />
+                            External Video Link {index + 1}
+                          </a>
+                        </Card>
+                      )
+                    }
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Product Information */}
+          <div className="space-y-8">
+            {/* Header */}
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <h1 className="text-3xl font-bold text-slate-900">{product.name}</h1>
+                {product.badge && (
+                  <Badge variant="secondary" className="text-sm">
+                    {product.badge}
+                  </Badge>
+                )}
+              </div>
+
+              <div className="flex items-center gap-6 text-sm text-slate-600 mb-6">
+                <div className="flex items-center gap-1">
+                  <Eye className="h-4 w-4" />
+                  <span>{product.views} views</span>
+                </div>
+                <div>
+                  Category: <span className="font-medium">{product.category}</span>
+                </div>
+                <div>
+                  By: <span className="font-medium">{product.manufacturer}</span>
+                </div>
+              </div>
+
+              <div className="text-2xl font-bold text-blue-600 mb-6">{product.price}</div>
+            </div>
+
+            {/* Action Buttons */}
+            <ProductActions pdfDocument={product.pdf_document} />
+
+            <Separator />
+
+            {/* Description */}
+            {product.description && (
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900 mb-4">Description</h2>
+                <p className="text-slate-700 leading-relaxed">{product.description}</p>
+              </div>
+            )}
+
+            {/* Features */}
+            {product.features.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900 mb-4">Key Features</h2>
+                <ul className="space-y-2">
+                  {product.features.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0" />
+                      <span className="text-slate-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Product Details */}
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900 mb-4">Product Details</h2>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-slate-600">Category:</span>
+                  <span className="ml-2 font-medium">{product.category}</span>
+                </div>
+                <div>
+                  <span className="text-slate-600">Manufacturer:</span>
+                  <span className="ml-2 font-medium">{product.manufacturer}</span>
+                </div>
+                <div>
+                  <span className="text-slate-600">Status:</span>
+                  <Badge variant={product.status === "active" ? "default" : "secondary"} className="ml-2">
+                    {product.status}
+                  </Badge>
+                </div>
+                <div>
+                  <span className="text-slate-600">Views:</span>
+                  <span className="ml-2 font-medium">{product.views}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-slate-900 mb-3">Interested in this product?</h3>
+                <p className="text-slate-700 mb-4">Contact us for detailed information, pricing, and availability.</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <a
+                    href="https://wa.me/905324196722"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-blue-600 hover:bg-blue-700 h-10 px-4 py-2"
+                  >
+                    Contact Sales Team
+                  </a>
+                  <a
+                    href="https://wa.me/905324196722"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
+                  >
+                    Request Technical Specs
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Related Products Section */}
+        <div className="mt-16">
+          <h2 className="text-2xl font-bold text-slate-900 mb-8">Related Products</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Related products will be fetched and displayed here */}
+            {/* For now, keeping placeholders or fetching actual related products */}
+            {/* This section needs actual implementation to fetch related products */}
+            {/* Example placeholder: */}
+            {/*
+            <Card className="group hover:shadow-lg transition-shadow">
+                <CardContent className="p-0">
+                  <div className="aspect-square bg-slate-100 flex items-center justify-center">
+                    <div className="text-slate-400">Related Product Placeholder</div>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-slate-900 group-hover:text-blue-600">Related Product Placeholder</h3>
+                    <p className="text-sm text-slate-600 mt-1">Sample Category</p>
+                    <p className="text-blue-600 font-medium mt-2">Contact for Price</p>
+                  </div>
+                </CardContent>
+              </Card>
+            */}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
