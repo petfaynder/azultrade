@@ -2,16 +2,18 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Package, FileText, Users, Settings, LogOut, Menu, X, Bell, Search } from "lucide-react"
+import { LayoutDashboard, Package, FileText, Users, Settings, LogOut, Menu, X, Bell, Search, Mail as MailIcon } from "lucide-react"
 import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
 import { usePathname } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Suspense } from "react"
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { name: "Messages", href: "/admin/messages", icon: MailIcon },
   { name: "Products", href: "/admin/products", icon: Package },
   { name: "Categories", href: "/admin/categories", icon: Package },
   { name: "Blog", href: "/admin/blog", icon: FileText },
@@ -21,7 +23,26 @@ const navigation = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const pathname = usePathname()
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await fetch("/api/admin/messages?status=Yeni&limit=1")
+      if (response.ok) {
+        const data = await response.json()
+        setUnreadCount(data.count || 0)
+      }
+    } catch (error) {
+      console.error("Failed to fetch unread messages count:", error)
+    }
+  }
+
+  useEffect(() => {
+    fetchUnreadCount()
+    const interval = setInterval(fetchUnreadCount, 30000) // Fetch every 30 seconds
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -66,6 +87,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 >
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.name}
+                  {item.name === "Messages" && unreadCount > 0 && (
+                    <Badge className="ml-auto">{unreadCount}</Badge>
+                  )}
                 </Link>
               )
             })}

@@ -523,3 +523,99 @@ export async function getStats() {
     throw error
   }
 }
+
+// Messages functions
+export interface Message {
+  id: number;
+  full_name: string;
+  email: string;
+  phone_number?: string;
+  subject: string;
+  message_content: string;
+  status: "Yeni" | "Okundu" | "Cevaplandı" | "Arşivlendi";
+  created_at: string;
+  updated_at: string;
+  ip_address?: string;
+}
+
+export async function getMessages(filters: {
+  status?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{ data: Message[]; count: number }> {
+  try {
+    // --- DEBUGGING LINES START ---
+    const { data: { user } } = await supabase.auth.getUser();
+    const { status, sortBy = 'created_at', sortOrder = 'desc', search, page = 1, limit = 10 } = filters;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    let query = supabase
+      .from('messages')
+      .select('*', { count: 'exact' })
+      .order(sortBy, { ascending: sortOrder === 'asc' })
+      .range(from, to);
+
+    if (status && status !== 'Tümü') {
+      query = query.eq('status', status);
+    }
+
+    if (search) {
+      query = query.or(`full_name.ilike.%${search}%,subject.ilike.%${search}%,email.ilike.%${search}%`);
+    }
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error("Database error in getMessages:", error);
+      throw new Error(`Database error: ${error.message}`);
+    }
+
+    return { data: data as Message[], count: count || 0 };
+  } catch (error) {
+    console.error("Error in getMessages:", error);
+    throw error;
+  }
+}
+
+export async function getMessageById(id: string): Promise<Message | null> {
+  try {
+    // First, fetch the message
+    const { data: message, error: fetchError } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) {
+      if (fetchError.code === 'PGRST116') return null; // Not found
+      console.error("Database error in getMessageById (fetch):", fetchError);
+      throw new Error(`Database error: ${fetchError.message}`);
+    }
+
+    // If the message status is 'Yeni', update it to 'Okundu'
+    if (message.status === 'Yeni') {
+      const { data: updatedMessage, error: updateError } = await supabase
+        .from('messages')
+        .update({ status: 'Okundu' })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (updateError) {
+        console.error("Database error in getMessageById (update):", updateError);
+        // Don't throw, just return the original message
+        return message as Message;
+      }
+      return updatedMessage as Message;
+    }
+
+    return message as Message;
+  } catch (error) {
+    console.error("Error in getMessageById:", error);
+    throw error;
+  }
+}

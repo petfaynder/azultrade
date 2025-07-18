@@ -1,6 +1,7 @@
+"use client"
 import type React from "react"
+import { usePathname } from "next/navigation"
 import { PageTransitionWrapper } from "@/components/page-transition-wrapper"
-import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { Header } from "@/components/layout/header"
@@ -10,25 +11,20 @@ import { CookieConsent } from "@/components/ui/cookie-consent"
 
 const inter = Inter({ subsets: ["latin"] })
 
-export const metadata: Metadata = {
-  title: "Azul Global Trade - Turkish Export Excellence",
-  description:
-    "Leading Turkish export company connecting premium manufacturers with global markets. Quality agricultural equipment, industrial machinery, and specialty products to 50+ countries worldwide.",
-  keywords: "turkish export, agricultural equipment, industrial machinery, global trade, turkish manufacturers",
-    generator: 'v0.dev'
-}
-
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname()
+  const isAdminPage = pathname.startsWith("/admin")
+
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Header />
+        {!isAdminPage && <Header />}
         <PageTransitionWrapper>{children}</PageTransitionWrapper>
-        <Footer />
+        {!isAdminPage && <Footer />}
         <Toaster />
         <CookieConsent />
       </body>

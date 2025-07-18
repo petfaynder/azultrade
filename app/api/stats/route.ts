@@ -1,7 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { getStats } from "@/lib/database"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const stats = await getStats()
     return NextResponse.json(stats)

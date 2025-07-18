@@ -62,18 +62,21 @@ export default async function HomePage() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg">
-                    Explore Products
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                  <a
-                    href="https://wa.me/905324196722"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-lg font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border-white text-white hover:bg-white hover:text-blue-900 px-8 py-4 bg-transparent h-12"
-                  >
-                    Contact Sales
-                  </a>
+                  <Link href="/products">
+                    <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg w-full">
+                      Explore Products
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </Button>
+                  </Link>
+                  <Link href="/contact">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-white text-white hover:bg-white hover:text-blue-900 px-8 py-4 text-lg w-full bg-transparent"
+                    >
+                      Contact Sales
+                    </Button>
+                  </Link>
                 </div>
 
                 {/* Stats */}
@@ -550,22 +553,23 @@ export default async function HomePage() {
                 Join thousands of businesses that trust Azul Global Trade for their international sourcing needs
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a
-                  href="https://wa.me/905324196722"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-lg font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-white text-blue-900 hover:bg-blue-50 px-8 h-12"
-                >
-                  Get Started Today
-                </a>
-                <a
-                  href="https://wa.me/905324196722"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-lg font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border-white text-white hover:bg-white hover:text-blue-900 px-8 bg-transparent h-12"
-                >
-                  Schedule Consultation
-                </a>
+                <Link href="/contact">
+                  <Button
+                    size="lg"
+                    className="bg-white text-blue-900 hover:bg-blue-50 px-8 h-12 text-lg w-full"
+                  >
+                    Get Started Today
+                  </Button>
+                </Link>
+                <Link href="/contact">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-white text-white hover:bg-white hover:text-blue-900 px-8 h-12 text-lg w-full bg-transparent"
+                  >
+                    Schedule Consultation
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
