@@ -101,7 +101,7 @@ export default async function HomePage() {
                 <CardContent className="p-8">
                   <div className="aspect-square bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center">
                     <img
-                      src="/placeholder.svg?height=400&width=400"
+                      src="/heroplaceholder.png"
                       alt="Global Trade"
                       className="w-full h-full object-cover rounded-2xl opacity-90"
                     />
@@ -171,15 +171,16 @@ export default async function HomePage() {
 
       {/* Partners Section */}
       <FadeInSection delay={0.4}>
-        <section className="py-20 bg-blue-900 text-white">
-          <div className="container mx-auto px-4 text-center">
+        <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 text-white overflow-hidden py-20">
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="relative container mx-auto px-4 text-center">
             <h2 className="text-3xl lg:text-4xl font-bold mb-12">Our Trusted Partners</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 items-center justify-center">
-              <img src="/placeholder-logo.svg" alt="Partner Logo 1" className="h-16 mx-auto opacity-70 hover:opacity-100 transition-opacity" />
-              <img src="/placeholder-logo.svg" alt="Partner Logo 2" className="h-16 mx-auto opacity-70 hover:opacity-100 transition-opacity" />
-              <img src="/placeholder-logo.svg" alt="Partner Logo 3" className="h-16 mx-auto opacity-70 hover:opacity-100 transition-opacity" />
-              <img src="/placeholder-logo.svg" alt="Partner Logo 4" className="h-16 mx-auto opacity-70 hover:opacity-100 transition-opacity" />
-              <img src="/placeholder-logo.svg" alt="Partner Logo 5" className="h-16 mx-auto opacity-70 hover:opacity-100 transition-opacity" />
+              <img src="/partners/GlobalCargo.svg" alt="GlobalCargo Logo" className="h-12 mx-auto opacity-80 hover:opacity-100 transition-opacity" />
+              <img src="/partners/TradeNet.svg" alt="TradeNet Logo" className="h-12 mx-auto opacity-80 hover:opacity-100 transition-opacity" />
+              <img src="/partners/SeaLane.svg" alt="SeaLane Logo" className="h-12 mx-auto opacity-80 hover:opacity-100 transition-opacity" />
+              <img src="/partners/AirWay.svg" alt="AirWay Logo" className="h-12 mx-auto opacity-80 hover:opacity-100 transition-opacity" />
+              <img src="/partners/TerraLogistics.svg" alt="TerraLogistics Logo" className="h-12 mx-auto opacity-80 hover:opacity-100 transition-opacity" />
             </div>
           </div>
         </section>

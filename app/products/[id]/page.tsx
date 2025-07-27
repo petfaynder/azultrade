@@ -68,7 +68,7 @@ export default function ProductPage() {
 
         // Fetch related products
         if (fetchedProduct.category_id) {
-          const allProducts = await getProducts({ category_id: fetchedProduct.category_id, limit: 5 })
+          const allProducts = await getProducts({ category: fetchedProduct.category_id, limit: 5 })
           setRelatedProducts(allProducts.filter((p) => p.id !== fetchedProduct.id))
         }
       } catch (err) {
@@ -265,7 +265,7 @@ export default function ProductPage() {
             </div>
 
             {/* Action Buttons */}
-            <ProductActions pdfDocument={product.pdf_document} />
+            <ProductActions product={product} />
 
             <Separator />
 

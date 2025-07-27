@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { useState } from "react"
 
+// Re-triggering TypeScript server to clear cached errors
 const contactFormSchema = z.object({
   full_name: z.string().min(2, "Full name must be at least 2 characters."),
   email: z.string().email("Invalid email address."),

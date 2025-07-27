@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
@@ -15,6 +15,7 @@ import { Plus, Search, Filter, Edit, Trash2, Eye, Download, Upload, RefreshCw, F
 import Image from "next/image"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
+import TinyMCEEditor from "@/components/ui/tinymce-editor"
 
 interface BlogPost {
   id: string
@@ -175,7 +176,12 @@ export default function BlogAdmin() {
       </div>
       <div>
         <Label htmlFor="content">Content *</Label>
-        <Textarea id="content" value={postState.content} onChange={(e) => setPostState({ ...postState, content: e.target.value })} rows={8} />
+        <TinyMCEEditor
+          value={postState.content}
+          onEditorChange={(content) => {
+            setPostState({ ...postState, content: content })
+          }}
+        />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
@@ -226,7 +232,10 @@ export default function BlogAdmin() {
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild><Button className="bg-gradient-to-r from-blue-600 to-blue-700"><Plus className="mr-2 h-4 w-4" />Add Post</Button></DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Add New Blog Post</DialogTitle></DialogHeader>
+              <DialogHeader>
+                <DialogTitle>Add New Blog Post</DialogTitle>
+                <DialogDescription>Create a new blog post by filling out the form below.</DialogDescription>
+              </DialogHeader>
               {renderForm({ title: "", excerpt: "", content: "", author: "", author_role: "Export Specialist", category: "Market Analysis", tags: "", image: "", featured: false, status: "published" }, (newState: any) => setEditingPost(newState))}
               <div className="flex justify-end space-x-3 pt-6 border-t">
                 <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
@@ -387,7 +396,10 @@ export default function BlogAdmin() {
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Edit Blog Post</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Edit Blog Post</DialogTitle>
+            <DialogDescription>Update the details of your blog post here.</DialogDescription>
+          </DialogHeader>
           {editingPost && renderForm(editingPost, setEditingPost)}
           <div className="flex justify-end space-x-3 pt-6 border-t">
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>

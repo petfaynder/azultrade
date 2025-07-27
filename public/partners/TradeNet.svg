@@ -1,0 +1,10 @@
+<svg width="150" height="60" viewBox="0 0 150 60" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .brand { font: bold 28px 'Arial Black', sans-serif; }
+    .net { fill: #F5F5F5; }
+    .trade { fill: #BDBDBD; }
+  </style>
+  <text x="5" y="40" class="brand trade">Trade</text>
+  <text x="85" y="40" class="brand net">Net</text>
+  <circle cx="78" cy="15" r="8" fill="none" stroke="#F5F5F5" stroke-width="2"/>
+</svg>

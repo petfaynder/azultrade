@@ -1,0 +1,9 @@
+<svg width="150" height="60" viewBox="0 0 150 60" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .heavy { font: bold 30px sans-serif; fill: #FFFFFF; }
+    .light { font: 15px sans-serif; fill: #E0E0E0; }
+  </style>
+  <text x="0" y="35" class="heavy">Global</text>
+  <text x="75" y="35" class="light">Cargo</text>
+  <path d="M0 50 Q 75 40, 150 50" stroke="#FFFFFF" stroke-width="2" fill="none" />
+</svg>

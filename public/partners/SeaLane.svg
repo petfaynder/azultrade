@@ -1,0 +1,8 @@
+<svg width="150" height="60" viewBox="0 0 150 60" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .title { font: italic bold 26px "Times New Roman", serif; fill: #EAEAEA; }
+  </style>
+  <text x="35" y="40" class="title">SeaLane</text>
+  <path d="M10 20 C 40 0, 110 0, 140 20" stroke="#B0C4DE" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M10 28 C 40 8, 110 8, 140 28" stroke="#B0C4DE" stroke-width="2" fill="none" stroke-linecap="round"/>
+</svg>

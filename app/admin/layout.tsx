@@ -3,8 +3,10 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Package, FileText, Users, Settings, LogOut, Menu, X, Bell, Search, Mail as MailIcon } from "lucide-react"
+import { LayoutDashboard, Package, FileText, Users, Settings, LogOut, Menu, X, Bell, Search, Mail as MailIcon, ClipboardList } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { usePathname } from "next/navigation"
@@ -14,6 +16,7 @@ import { Suspense } from "react"
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Messages", href: "/admin/messages", icon: MailIcon },
+  { name: "Quote Requests", href: "/admin/quotes", icon: ClipboardList },
   { name: "Products", href: "/admin/products", icon: Package },
   { name: "Categories", href: "/admin/categories", icon: Package },
   { name: "Blog", href: "/admin/blog", icon: FileText },
@@ -25,6 +28,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const pathname = usePathname()
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push("/login")
+    router.refresh()
+  }
 
   const fetchUnreadCount = async () => {
     try {
@@ -96,7 +107,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </nav>
         <div className="mt-auto px-3 py-2">
-          <Button variant="ghost" className="w-full justify-start text-gray-700 hover:bg-gray-100 rounded-lg">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-gray-700 hover:bg-gray-100 rounded-lg"
+            onClick={handleSignOut}
+          >
             <LogOut className="mr-3 h-5 w-5" />
             Sign Out
           </Button>

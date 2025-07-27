@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Plus, Eye, Edit, Trash2, Search, Filter, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import TinyMCEEditor from "@/components/ui/tinymce-editor"
 import type { Category, Product } from "@/lib/database"
 
 interface ProductFormProps {
@@ -119,13 +120,12 @@ const ProductForm = ({
       </div>
 
       <div>
-        <Label htmlFor="rich_description">Rich Description (Markdown supported)</Label>
-        <Textarea
-          id="rich_description"
+        <Label htmlFor="rich_description">Rich Description</Label>
+        <TinyMCEEditor
           value={formData.rich_description}
-          onChange={(e) => setFormData({ ...formData, rich_description: e.target.value })}
-          placeholder="Enter detailed product description using Markdown for rich formatting, images, and videos."
-          rows={8}
+          onEditorChange={(content) => {
+            setFormData({ ...formData, rich_description: content })
+          }}
         />
       </div>
 
@@ -611,6 +611,7 @@ export default function ProductClientPage({ initialProducts, initialCategories }
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-slate-900">Add New Product</DialogTitle>
+              <DialogDescription>Fill in the details below to add a new product to the catalog.</DialogDescription>
             </DialogHeader>
             <ProductForm
               formData={formData}
@@ -811,6 +812,7 @@ export default function ProductClientPage({ initialProducts, initialCategories }
             <DialogTitle className="text-2xl font-bold text-slate-900">
               Edit Product: {editingProduct?.name}
             </DialogTitle>
+            <DialogDescription>Update the details of the product below.</DialogDescription>
           </DialogHeader>
           <ProductForm
               formData={formData}

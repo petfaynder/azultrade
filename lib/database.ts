@@ -619,3 +619,40 @@ export async function getMessageById(id: string): Promise<Message | null> {
     throw error;
   }
 }
+
+export async function getQuotesAdmin() {
+  try {
+    const { data, error } = await supabase
+      .from('quotes')
+      .select(`
+        id,
+        customer_name,
+        customer_email,
+        company_name,
+        phone_number,
+        message,
+        status,
+        created_at,
+        quote_items (
+          quantity,
+          notes,
+          products (
+            id,
+            name,
+            manufacturer
+          )
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Database error in getQuotesAdmin:', error);
+      throw new Error(`Database error: ${error.message}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in getQuotesAdmin:', error);
+    throw error;
+  }
+}
