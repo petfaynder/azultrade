@@ -108,6 +108,7 @@ export default async function HomePage() {
                       height={500}
                       className="w-full h-full object-cover rounded-2xl opacity-90"
                       priority
+                      sizes="(max-width: 1024px) 100vw, 50vw"
                     />
                   </div>
                 </CardContent>
@@ -209,7 +210,7 @@ export default async function HomePage() {
                       <div className="aspect-square bg-slate-100 overflow-hidden">
                         {product.images.length > 0 ? (
                           <Image
-                            src={product.images[0] || "/placeholder.svg"}
+                            src={product.images[0]?.url || "/placeholder.svg"}
                             alt={product.name}
                             width={400}
                             height={400}
