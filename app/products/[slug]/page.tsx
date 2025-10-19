@@ -10,15 +10,15 @@ import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Eye, Play, X } from "lucide-react"
-import { getProduct, incrementProductViews, getProducts } from "@/lib/database"
-import type { Product } from "@/lib/database"
+import { getProductBySlug, incrementProductViews, getProducts } from "@/lib/database"
+import type { Product, ImageInfo } from "@/lib/database" // ImageInfo'yu import et
 import ProductActions from "@/components/product-actions"
-import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm"
+import JsonLd from "@/components/seo/JsonLd"
+import Head from "next/head" // Head bileşenini import et
 
 interface ProductPageProps {
   params: {
-    id: string
+    slug: string
   }
 }
 
@@ -40,14 +40,14 @@ function isVideoUrl(url: string): boolean {
 
 export default function ProductPage() {
   const params = useParams()
-  const id = params.id as string // useParams'tan gelen id'yi string olarak cast ediyoruz
+  const slug = params.slug as string // useParams'tan gelen slug'ı string olarak cast ediyoruz
 
   const [product, setProduct] = useState<Product | null>(null)
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const [selectedImage, setSelectedImage] = useState<string>("/placeholder.svg")
+  const [selectedImage, setSelectedImage] = useState<ImageInfo>({ url: "/placeholder.svg", alt: "Placeholder image" })
   const [isGalleryOpen, setIsGalleryOpen] = useState(false)
   const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0)
 
@@ -55,16 +55,16 @@ export default function ProductPage() {
     const fetchProductData = async () => {
       try {
         setLoading(true)
-        const fetchedProduct = await getProduct(id)
+        const fetchedProduct = await getProductBySlug(slug)
         if (!fetchedProduct) {
           notFound()
           return
         }
         setProduct(fetchedProduct)
-        setSelectedImage(fetchedProduct.images[0] || "/placeholder.svg")
+        setSelectedImage(fetchedProduct.images[0] || { url: "/placeholder.svg", alt: "Placeholder image" })
 
         // Increment views
-        await incrementProductViews(id)
+        await incrementProductViews(fetchedProduct.id) // Pass ID to increment function
 
         // Fetch related products
         if (fetchedProduct.category_id) {
@@ -81,7 +81,7 @@ export default function ProductPage() {
     }
 
     fetchProductData()
-  }, [id])
+  }, [slug])
 
   const openGallery = (index: number) => {
     setCurrentGalleryIndex(index)
@@ -89,11 +89,11 @@ export default function ProductPage() {
   }
 
   const goToNextImage = () => {
-    setCurrentGalleryIndex((prevIndex) => (prevIndex + 1) % (product?.images.length || 1))
+    setCurrentGalleryIndex((prevIndex) => (prevIndex + 1) % (product?.images?.length || 1))
   }
 
   const goToPreviousImage = () => {
-    setCurrentGalleryIndex((prevIndex) => (prevIndex - 1 + (product?.images.length || 1)) % (product?.images.length || 1))
+    setCurrentGalleryIndex((prevIndex) => (prevIndex - 1 + (product?.images?.length || 1)) % (product?.images?.length || 1))
   }
 
   if (loading) {
@@ -112,8 +112,42 @@ export default function ProductPage() {
     )
   }
 
+  const metaDescription = product.seo_info?.meta_description || (product.rich_description || "").substring(0, 160);
+  const imageUrl = product.images?.[0]?.url || "/placeholder.svg";
+  const imageAlt = product.images?.[0]?.alt || product.name;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <Head>
+        <title>{product.name} - {product.manufacturer}</title>
+        <meta name="description" content={metaDescription} />
+        {product.seo_info?.primary_keyword && (
+          <meta name="keywords" content={`${product.seo_info.primary_keyword}, ${product.seo_info.long_tail_keywords?.join(', ')}`} />
+        )}
+        {/* Open Graph / Facebook */}
+        <meta property="og:title" content={product.name} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:image" content={imageUrl} />
+        <meta property="og:type" content="product" />
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={product.name} />
+        <meta name="twitter:description" content={metaDescription} />
+        <meta name="twitter:image" content={imageUrl} />
+      </Head>
+      <JsonLd data={product.structured_data || {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": product.name,
+        "image": imageUrl,
+        "description": metaDescription,
+        "sku": product.id,
+        "brand": {
+          "@type": "Brand",
+          "name": product.manufacturer
+        },
+        // Add more properties like offers, aggregateRating if available
+      }} />
       <div className="container mx-auto px-4 py-8">
         {/* Breadcrumb */}
         <nav className="flex items-center space-x-2 text-sm text-slate-600 mb-8">
@@ -132,13 +166,13 @@ export default function ProductPage() {
           {/* Product Images/Videos Gallery */}
           <div className="space-y-6">
             {/* Main Image/Video Display */}
-            <Card className="overflow-hidden cursor-pointer" onClick={() => openGallery(product.images.indexOf(selectedImage))}>
+            <Card className="overflow-hidden cursor-pointer" onClick={() => openGallery(product.images.findIndex(img => img.url === selectedImage.url))}>
               <CardContent className="p-0">
-                {product.images.length > 0 ? (
+                {product.images && product.images.length > 0 && selectedImage.url ? (
                   <div className="aspect-square bg-slate-100 flex items-center justify-center">
                     <img
-                      src={selectedImage}
-                      alt={product.name}
+                      src={selectedImage.url}
+                      alt={selectedImage.alt || product.name}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -154,19 +188,19 @@ export default function ProductPage() {
             </Card>
 
             {/* Image Gallery Thumbnails */}
-            {product.images.length > 1 && (
+            {product.images && product.images.length > 1 && (
               <div className="grid grid-cols-4 gap-4">
                 {product.images.map((image, index) => (
                   <Card
                     key={index}
-                    className={`overflow-hidden cursor-pointer hover:ring-2 ${selectedImage === image ? "ring-blue-500" : "ring-transparent"}`}
+                    className={`overflow-hidden cursor-pointer hover:ring-2 ${selectedImage.url === image.url ? "ring-blue-500" : "ring-transparent"}`}
                     onClick={() => setSelectedImage(image)}
                   >
                     <CardContent className="p-0">
                       <div className="aspect-square bg-slate-100">
                         <img
-                          src={image || "/placeholder.svg"}
-                          alt={`${product.name} - Image ${index + 1}`}
+                          src={image.url || "/placeholder.svg"}
+                          alt={image.alt || `${product.name} - Image ${index + 1}`}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -254,7 +288,7 @@ export default function ProductPage() {
                   <span>{product.views} views</span>
                 </div>
                 <div>
-                  Category: <span className="font-medium">{product.category_name}</span>
+                  Category: <span className="font-medium">{product.category_name || 'Uncategorized'}</span>
                 </div>
                 <div>
                   By: <span className="font-medium">{product.manufacturer}</span>
@@ -292,7 +326,7 @@ export default function ProductPage() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-slate-600">Category:</span>
-                  <span className="ml-2 font-medium">{product.category_name}</span>
+                  <span className="ml-2 font-medium">{product.category_name || 'Uncategorized'}</span>
                 </div>
                 <div>
                   <span className="text-slate-600">Manufacturer:</span>
@@ -343,11 +377,7 @@ export default function ProductPage() {
         {product.rich_description && (
           <div className="mt-16">
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Product Overview</h2>
-            <div className="prose max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {product.rich_description}
-              </ReactMarkdown>
-            </div>
+            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: product.rich_description }} />
           </div>
         )}
 
@@ -389,9 +419,7 @@ export default function ProductPage() {
                         {product.additional_info.map((info, index) => (
                           <div key={index}>
                             <h4 className="font-semibold text-slate-900">{info.title}</h4>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {info.content}
-                            </ReactMarkdown>
+                            <div dangerouslySetInnerHTML={{ __html: info.content }} />
                           </div>
                         ))}
                       </div>
@@ -409,14 +437,14 @@ export default function ProductPage() {
             <h2 className="text-2xl font-bold text-slate-900 mb-8">Related Products</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((relatedProduct) => (
-                <Link key={relatedProduct.id} href={`/products/${relatedProduct.id}`}>
+                <Link key={relatedProduct.id} href={`/products/${relatedProduct.slug}`}>
                   <Card className="group hover:shadow-lg transition-shadow">
                     <CardContent className="p-0">
                       <div className="aspect-square bg-slate-100 flex items-center justify-center">
-                        {relatedProduct.images && relatedProduct.images.length > 0 ? (
+                        {relatedProduct.images && relatedProduct.images.length > 0 && relatedProduct.images[0].url ? (
                           <img
-                            src={relatedProduct.images[0]}
-                            alt={relatedProduct.name}
+                            src={relatedProduct.images[0].url}
+                            alt={relatedProduct.images[0].alt || relatedProduct.name}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -447,11 +475,11 @@ export default function ProductPage() {
             </Button>
           </DialogHeader>
           <div className="relative w-full h-full flex items-center justify-center bg-black">
-            {product.images && product.images.length > 0 && (
+            {product.images && product.images.length > 0 && product.images[currentGalleryIndex]?.url && (
               <>
                 <img
-                  src={product.images[currentGalleryIndex]}
-                  alt={`${product.name} - Gallery Image ${currentGalleryIndex + 1}`}
+                  src={product.images[currentGalleryIndex].url}
+                  alt={product.images[currentGalleryIndex].alt || `${product.name} - Gallery Image ${currentGalleryIndex + 1}`}
                   className="max-w-full max-h-full object-contain"
                 />
                 {product.images.length > 1 && (

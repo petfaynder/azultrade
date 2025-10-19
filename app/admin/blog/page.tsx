@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -52,6 +52,10 @@ export default function BlogAdmin() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingPost, setEditingPost] = useState<Partial<BlogPost> | null>(null)
+  const [newPost, setNewPost] = useState({
+    title: "", excerpt: "", content: "", author: "", author_role: "Export Specialist", category: "Market Analysis",
+    tags: "", image: "", featured: false, status: "published" as const
+  })
 
   const [stats, setStats] = useState({ total: 0, published: 0, draft: 0, featured: 0, totalViews: 0, totalLikes: 0 })
 
@@ -94,10 +98,7 @@ export default function BlogAdmin() {
   };
 
   const handleFormSubmit = async (isEditing: boolean) => {
-    const postData = isEditing ? editingPost : {
-        title: "", excerpt: "", content: "", author: "", author_role: "Export Specialist", category: "Market Analysis",
-        tags: "", image: "", featured: false, status: "published" as const
-    };
+    const postData = isEditing ? editingPost : newPost;
 
     if (!postData?.title || !postData.content || !postData.author || !postData.category) {
       toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" })
@@ -105,7 +106,7 @@ export default function BlogAdmin() {
     }
 
     setSubmitting(true)
-    const apiEndpoint = isEditing ? `/api/admin/blog/${postData.id}` : "/api/blog"
+    const apiEndpoint = isEditing ? `/api/admin/blog/${editingPost?.id}` : "/api/blog"
     const method = isEditing ? "PUT" : "POST"
 
     const payload = {
@@ -155,70 +156,78 @@ export default function BlogAdmin() {
     }
   }
 
-  const renderForm = (postState: any, setPostState: Function) => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <Label htmlFor="title">Post Title *</Label>
-          <Input id="title" value={postState.title} onChange={(e) => setPostState({ ...postState, title: e.target.value })} />
-        </div>
-        <div>
-          <Label htmlFor="category">Category *</Label>
-          <Select value={postState.category} onValueChange={(value) => setPostState({ ...postState, category: value })}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{categories.slice(1).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
+const BlogForm = memo(({ postState, setPostState, categories }: { postState: any, setPostState: Function, categories: string[] }) => (
+  <div className="space-y-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <Label htmlFor="title">Post Title *</Label>
+        <Input id="title" value={postState.title} onChange={(e) => setPostState((prevState: any) => ({ ...prevState, title: e.target.value }))} />
       </div>
       <div>
-        <Label htmlFor="excerpt">Excerpt</Label>
-        <Textarea id="excerpt" value={postState.excerpt} onChange={(e) => setPostState({ ...postState, excerpt: e.target.value })} rows={2} />
-      </div>
-      <div>
-        <Label htmlFor="content">Content *</Label>
-        <TinyMCEEditor
-          value={postState.content}
-          onEditorChange={(content) => {
-            setPostState({ ...postState, content: content })
-          }}
-        />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <Label htmlFor="author">Author *</Label>
-          <Input id="author" value={postState.author} onChange={(e) => setPostState({ ...postState, author: e.target.value })} />
-        </div>
-        <div>
-          <Label htmlFor="author_role">Author Role</Label>
-          <Input id="author_role" value={postState.author_role} onChange={(e) => setPostState({ ...postState, author_role: e.target.value })} />
-        </div>
-      </div>
-      <div>
-        <Label htmlFor="tags">Tags (comma separated)</Label>
-        <Input id="tags" value={postState.tags} onChange={(e) => setPostState({ ...postState, tags: e.target.value })} />
-      </div>
-      <div>
-        <Label htmlFor="image">Featured Image URL</Label>
-        <Input id="image" value={postState.image} onChange={(e) => setPostState({ ...postState, image: e.target.value })} />
-      </div>
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2">
-          <Switch id="featured" checked={postState.featured} onCheckedChange={(c) => setPostState({ ...postState, featured: c })} />
-          <Label htmlFor="featured">Featured Post</Label>
-        </div>
-        <div>
-          <Label htmlFor="status">Status</Label>
-          <Select value={postState.status} onValueChange={(v: "published" | "draft") => setPostState({ ...postState, status: v })}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="published">Published</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <Label htmlFor="category">Category *</Label>
+        <Select value={postState.category} onValueChange={(value) => setPostState((prevState: any) => ({ ...prevState, category: value }))}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>{categories.slice(1).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+        </Select>
       </div>
     </div>
-  );
+    <div>
+      <Label htmlFor="excerpt">Excerpt</Label>
+      <Textarea id="excerpt" value={postState.excerpt} onChange={(e) => setPostState((prevState: any) => ({ ...prevState, excerpt: e.target.value }))} rows={2} />
+    </div>
+    <div>
+      <Label htmlFor="content">Content *</Label>
+      <TinyMCEEditor
+        value={postState.content}
+        onEditorChange={(content) => {
+          setPostState((prevState: any) => ({ ...prevState, content: content }))
+        }}
+      />
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <Label htmlFor="author">Author *</Label>
+        <Input id="author" value={postState.author} onChange={(e) => setPostState((prevState: any) => ({ ...prevState, author: e.target.value }))} />
+      </div>
+      <div>
+        <Label htmlFor="author_role">Author Role</Label>
+        <Input id="author_role" value={postState.author_role} onChange={(e) => setPostState((prevState: any) => ({ ...prevState, author_role: e.target.value }))} />
+      </div>
+    </div>
+    <div>
+      <Label htmlFor="tags">Tags (comma separated)</Label>
+      <Input id="tags" value={postState.tags} onChange={(e) => setPostState((prevState: any) => ({ ...prevState, tags: e.target.value }))} />
+    </div>
+    <div>
+      <Label htmlFor="image">Featured Image URL</Label>
+      <Input id="image" value={postState.image} onChange={(e) => setPostState((prevState: any) => ({ ...prevState, image: e.target.value }))} />
+    </div>
+    <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-2">
+        <Switch id="featured" checked={postState.featured} onCheckedChange={(c) => setPostState((prevState: any) => ({ ...prevState, featured: c }))} />
+        <Label htmlFor="featured">Featured Post</Label>
+      </div>
+      <div>
+        <Label htmlFor="status">Status</Label>
+        <Select value={postState.status} onValueChange={(v: "published" | "draft") => setPostState((prevState: any) => ({ ...prevState, status: v }))}>
+          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="published">Published</SelectItem>
+            <SelectItem value="draft">Draft</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  </div>
+));
+
+  const handleSetNewPost = useCallback((newState: any) => {
+    setNewPost(newState);
+  }, []);
+
+  const handleSetEditingPost = useCallback((newState: any) => {
+    setEditingPost(newState);
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -229,6 +238,11 @@ export default function BlogAdmin() {
         </div>
         <div className="flex items-center space-x-3">
           <Button variant="outline" onClick={fetchPosts} disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /><span>Refresh</span></Button>
+          <Link href="/admin/blog/json-create">
+            <Button variant="outline" className="bg-gradient-to-r from-purple-600 to-purple-700 text-white">
+              <Upload className="mr-2 h-4 w-4" />JSON Import
+            </Button>
+          </Link>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild><Button className="bg-gradient-to-r from-blue-600 to-blue-700"><Plus className="mr-2 h-4 w-4" />Add Post</Button></DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -236,7 +250,7 @@ export default function BlogAdmin() {
                 <DialogTitle>Add New Blog Post</DialogTitle>
                 <DialogDescription>Create a new blog post by filling out the form below.</DialogDescription>
               </DialogHeader>
-              {renderForm({ title: "", excerpt: "", content: "", author: "", author_role: "Export Specialist", category: "Market Analysis", tags: "", image: "", featured: false, status: "published" }, (newState: any) => setEditingPost(newState))}
+              <BlogForm postState={newPost} setPostState={handleSetNewPost} categories={categories} />
               <div className="flex justify-end space-x-3 pt-6 border-t">
                 <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
                 <Button onClick={() => handleFormSubmit(false)} disabled={submitting}>{submitting ? "Adding..." : "Add Post"}</Button>
@@ -400,7 +414,7 @@ export default function BlogAdmin() {
             <DialogTitle>Edit Blog Post</DialogTitle>
             <DialogDescription>Update the details of your blog post here.</DialogDescription>
           </DialogHeader>
-          {editingPost && renderForm(editingPost, setEditingPost)}
+          {editingPost && <BlogForm postState={editingPost} setPostState={handleSetEditingPost} categories={categories} />}
           <div className="flex justify-end space-x-3 pt-6 border-t">
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
             <Button onClick={() => handleFormSubmit(true)} disabled={submitting}>{submitting ? "Updating..." : "Update Post"}</Button>

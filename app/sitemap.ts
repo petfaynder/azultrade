@@ -1,9 +1,26 @@
 import type { MetadataRoute } from "next"
-
-export default function sitemap(): MetadataRoute.Sitemap {
+import { getProducts, getBlogPosts } from "@/lib/database"
+ 
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://azulglobaltrade.com"
-
-  return [
+ 
+  // Get all products
+  const products = await getProducts()
+  const productUrls = products.map(product => ({
+    url: `${baseUrl}/products/${product.slug}`,
+    lastModified: new Date(product.updated_at),
+    priority: 0.8,
+  }))
+ 
+  // Get all blog posts
+  const blogPosts = await getBlogPosts()
+  const blogUrls = blogPosts.map(post => ({
+    url: `${baseUrl}/blog/${post.slug}`,
+    lastModified: new Date(post.updated_at),
+    priority: 0.7,
+  }))
+ 
+  const staticUrls = [
     {
       url: baseUrl,
       lastModified: new Date(),
@@ -41,4 +58,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
   ]
+ 
+  return [...staticUrls, ...productUrls, ...blogUrls]
 }

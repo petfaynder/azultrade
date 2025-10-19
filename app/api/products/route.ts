@@ -1,5 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getProducts, createProduct } from "@/lib/database"
+import { revalidatePath } from "next/cache"
+import { slugify } from "@/lib/utils"
+import { supabase } from "@/lib/supabase"
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,13 +10,17 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category")
     const search = searchParams.get("search")
     const isFeatured = searchParams.get("is_featured")
+    const sortBy = searchParams.get("sortBy")
+    const sortOrder = searchParams.get("sortOrder")
 
-    console.log("API: GET /api/products called with filters:", { category, search, isFeatured })
+    console.log("API: GET /api/products called with filters:", { category, search, isFeatured, sortBy, sortOrder })
 
-    const filters: { category?: string; search?: string; is_featured?: boolean } = {}
+    const filters: { category?: string; search?: string; is_featured?: boolean; sortBy?: string; sortOrder?: string; } = {}
     if (category && category !== "all") filters.category = category
     if (search) filters.search = search
     if (isFeatured === "true") filters.is_featured = true
+    if (sortBy) filters.sortBy = sortBy
+    if (sortOrder) filters.sortOrder = sortOrder
 
     const products = await getProducts(filters)
 
@@ -39,7 +46,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare product data
+    // Slug oluşturma ve benzersizlik kontrolü
+    const baseSlug = slugify(body.name);
+    let slug = baseSlug;
+    let counter = 2;
+    let slugExists = true;
+
+    while (slugExists) {
+      const { data: existingProduct, error: checkError } = await supabase
+        .from('products')
+        .select('id')
+        .eq('slug', slug)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error(`Slug benzersizliği kontrol edilirken hata oluştu "${slug}":`, checkError.message);
+        slug = `${baseSlug}-${Date.now()}`; // Fallback
+        slugExists = false;
+      } else if (!existingProduct) {
+        slugExists = false;
+      } else {
+        slug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+    }
+
+    // Prepare product data
     const productData = {
+      slug,
       name: body.name,
       category_id: body.category_id, // category yerine category_id kullanıldı
       manufacturer: body.manufacturer,
@@ -61,6 +95,8 @@ export async function POST(request: NextRequest) {
     const newProduct = await createProduct(productData)
 
     console.log("API: Product created successfully:", newProduct.id)
+    revalidatePath("/admin/products")
+    revalidatePath("/products")
     return NextResponse.json(newProduct, { status: 201 })
   } catch (error) {
     console.error("API Error in POST /api/products:", error)

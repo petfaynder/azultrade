@@ -10,13 +10,25 @@ import Image from "next/image"
 import Link from "next/link"
 import type { BlogPost } from "@/lib/database"
 import { notFound } from "next/navigation"
-
+import JsonLd from "@/components/seo/JsonLd"
+import {
+  FacebookShareButton,
+  TwitterShareButton,
+  LinkedinShareButton,
+  WhatsappShareButton,
+  FacebookIcon,
+  TwitterIcon,
+  LinkedinIcon,
+  WhatsappIcon,
+} from "react-share";
+ 
 // This component will fetch data on the client side.
 export default function BlogPostPage({ params }: { params: { slug: string } }) {
   const [post, setPost] = useState<BlogPost | null>(null)
   const [loading, setLoading] = useState(true)
   const [liked, setLiked] = useState(false)
-
+  const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([])
+ 
   useEffect(() => {
     const fetchPost = async () => {
       if (!params.slug) return;
@@ -25,6 +37,14 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
         if (response.ok) {
           const data = await response.json()
           setPost(data)
+          // Fetch related posts
+          if (data.category) {
+            const relatedResponse = await fetch(`/api/blog?category=${encodeURIComponent(data.category)}&limit=3&excludeId=${data.id}`)
+            if (relatedResponse.ok) {
+              const relatedData = await relatedResponse.json()
+              setRelatedPosts(relatedData)
+            }
+          }
         } else {
           setPost(null)
         }
@@ -76,6 +96,26 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <JsonLd data={{
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": post.title,
+        "image": post.image || "",
+        "author": {
+          "@type": "Person",
+          "name": post.author
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "Azul Global Trade",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://www.azultrade.com/placeholder-logo.svg" // Replace with your actual logo URL
+          }
+        },
+        "datePublished": post.publish_date,
+        "description": post.excerpt
+      }} />
       {/* Breadcrumb */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-4">
@@ -110,6 +150,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
                 width={1200}
                 height={600}
                 className="w-full h-64 md:h-96 object-cover"
+                priority
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
               <div className="absolute bottom-6 left-6 right-6">
@@ -173,10 +214,20 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
                     <MessageCircle className="h-4 w-4 mr-2" />
                     {post.comments} Comments
                   </Button>
-                  <Button variant="outline" size="sm">
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Share
-                  </Button>
+                  <div className="flex items-center space-x-2">
+                    <FacebookShareButton url={window.location.href} hashtag={"#AzulGlobalTrade"}>
+                      <FacebookIcon size={32} round />
+                    </FacebookShareButton>
+                    <TwitterShareButton url={window.location.href} title={post.title}>
+                      <TwitterIcon size={32} round />
+                    </TwitterShareButton>
+                    <LinkedinShareButton url={window.location.href} title={post.title}>
+                      <LinkedinIcon size={32} round />
+                    </LinkedinShareButton>
+                    <WhatsappShareButton url={window.location.href} title={post.title}>
+                      <WhatsappIcon size={32} round />
+                    </WhatsappShareButton>
+                  </div>
                 </div>
                 <Button variant="outline" size="sm">
                   <Bookmark className="h-4 w-4 mr-2" />
@@ -225,8 +276,26 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           <Card>
             <CardContent className="p-6">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">Related Articles</h3>
-              <div className="text-center text-gray-500">
-                <p>More related articles coming soon...</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {relatedPosts.length > 0 ? (
+                  relatedPosts.map(relatedPost => (
+                    <Link key={relatedPost.id} href={`/blog/${relatedPost.slug}`}>
+                      <Card className="group hover:shadow-lg transition-shadow">
+                        <CardContent className="p-0">
+                          <Image src={relatedPost.image || "/placeholder.svg"} alt={relatedPost.title} width={400} height={200} className="w-full h-40 object-cover" loading="lazy" />
+                          <div className="p-4">
+                            <h4 className="font-semibold text-gray-900 group-hover:text-purple-600">{relatedPost.title}</h4>
+                            <p className="text-sm text-gray-600 mt-2">{new Date(relatedPost.publish_date).toLocaleDateString()}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-500 col-span-full">
+                    <p>No related articles found.</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

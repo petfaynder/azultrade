@@ -76,6 +76,34 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Ürün ID'sinden slug'a yönlendirme
+  const productPathRegex = /^\/products\/(\d+)$/;
+  const match = pathname.match(productPathRegex);
+
+  if (match) {
+    const productId = match[1];
+    try {
+      const { data: product, error } = await supabase
+        .from('products')
+        .select('slug')
+        .eq('id', productId)
+        .single();
+
+      if (error) {
+        console.error(`Middleware: Ürün ID'si ${productId} için slug aranırken veritabanı hatası:`, error.message);
+      }
+
+      if (product && product.slug) {
+        const newUrl = request.nextUrl.clone();
+        newUrl.pathname = `/products/${product.slug}`;
+        console.log(`Middleware: Yönlendiriliyor: ${pathname} -> ${newUrl.pathname}`);
+        return NextResponse.redirect(newUrl, 301); // Kalıcı yönlendirme
+      }
+    } catch (e) {
+      console.error(`Middleware: Yönlendirme sırasında beklenmedik hata:`, e);
+    }
+  }
+
   return response
 }
 

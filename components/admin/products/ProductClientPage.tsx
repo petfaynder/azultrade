@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,7 +10,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Eye, Edit, Trash2, Search, Filter, X } from "lucide-react"
+import { Plus, Eye, Edit, Trash2, Search, Filter, X, Upload, MoreHorizontal } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useToast } from "@/hooks/use-toast"
 import TinyMCEEditor from "@/components/ui/tinymce-editor"
 import type { Category, Product } from "@/lib/database"
@@ -25,17 +34,25 @@ interface ProductFormProps {
     technical_specs: { title: string; value: string }[]
     additional_info: { title: string; content: string }[]
     features: string[]
-    images: string[]
+    images: { url: string; alt: string }[]
     videos: string[]
     pdf_document: string | null
     badge: string
     status: string
     is_featured: boolean
+    seo_info: {
+      primary_keyword?: string;
+      long_tail_keywords?: string[];
+      meta_description?: string;
+      related_topics?: string[];
+    } | null;
+    structured_data: any | null;
   }
   setFormData: React.Dispatch<React.SetStateAction<ProductFormProps["formData"]>>
   addArrayField: (field: "features" | "images" | "videos" | "technical_specs" | "additional_info") => void
   removeArrayField: (field: "features" | "images" | "videos" | "technical_specs" | "additional_info", index: number) => void
-  updateArrayField: (field: "features" | "images" | "videos", index: number, value: string) => void
+  updateArrayField: (field: "features" | "videos", index: number, value: string) => void
+  updateImageArrayField: (index: number, key: "url" | "alt", value: string) => void
   updateObjectArrayField: (
     field: "technical_specs" | "additional_info",
     index: number,
@@ -59,6 +76,7 @@ const ProductForm = ({
   addArrayField,
   removeArrayField,
   updateArrayField,
+  updateImageArrayField,
   updateObjectArrayField,
   categories,
   handleAddProduct,
@@ -167,11 +185,18 @@ const ProductForm = ({
         </div>
         <div className="space-y-2">
           {formData.images.map((image, index) => (
-            <div key={index} className="flex gap-2">
+            <div key={index} className="flex gap-2 items-center">
               <Input
-                value={image}
-                onChange={(e) => updateArrayField("images", index, e.target.value)}
+                value={image.url}
+                onChange={(e) => updateImageArrayField(index, "url", e.target.value)}
                 placeholder="Enter image URL"
+                className="w-1/2"
+              />
+              <Input
+                value={image.alt}
+                onChange={(e) => updateImageArrayField(index, "alt", e.target.value)}
+                placeholder="Enter alt text"
+                className="w-1/2"
               />
               {formData.images.length > 1 && (
                 <Button type="button" variant="outline" size="sm" onClick={() => removeArrayField("images", index)}>
@@ -254,29 +279,126 @@ const ProductForm = ({
           </Button>
         </div>
         <div className="space-y-2">
-          {formData.additional_info.map((info, index) => (
-            <div key={index} className="space-y-2 border p-3 rounded-md">
-              <Input
-                value={info.title}
-                onChange={(e) => updateObjectArrayField("additional_info", index, "title", e.target.value)}
-                placeholder="Info Title (e.g., FAQ Question)"
-              />
-              <Textarea
-                value={info.content}
-                onChange={(e) => updateObjectArrayField("additional_info", index, "content", e.target.value)}
-                placeholder="Info Content (Markdown supported)"
-                rows={3}
-              />
-              {formData.additional_info.length > 0 && (
-                <div className="flex justify-end">
-                  <Button type="button" variant="outline" size="sm" onClick={() => removeArrayField("additional_info", index)}>
-                    <X className="h-4 w-4 mr-1" />
-                    Remove
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
+          {formData.additional_info.map((info, index) => {
+            console.log(`Additional Info Item ${index}:`, info); // DEBUG LOG
+            return (
+              <div key={index} className="space-y-2 border p-3 rounded-md">
+                <Input
+                  value={info.title}
+                  onChange={(e) => updateObjectArrayField("additional_info", index, "title", e.target.value)}
+                  placeholder="Info Title (e.g., FAQ Question)"
+                />
+                <Textarea
+                  value={info.content}
+                  onChange={(e) => updateObjectArrayField("additional_info", index, "content", e.target.value)}
+                  placeholder="Info Content (Markdown supported)"
+                  rows={3}
+                />
+                {formData.additional_info.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button type="button" variant="outline" size="sm" onClick={() => removeArrayField("additional_info", index)}>
+                      <X className="h-4 w-4 mr-1" />
+                      Remove
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* SEO Information Section */}
+      <div className="space-y-4 border p-4 rounded-md">
+        <h3 className="text-lg font-semibold text-slate-800">SEO Information</h3>
+        <div>
+          <Label htmlFor="seo_primary_keyword">Primary Keyword</Label>
+          <Input
+            id="seo_primary_keyword"
+            value={formData.seo_info?.primary_keyword || ""}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                seo_info: { ...prev.seo_info, primary_keyword: e.target.value },
+              }))
+            }
+            placeholder="Enter primary keyword"
+          />
+        </div>
+        <div>
+          <Label htmlFor="seo_long_tail_keywords">Long-Tail Keywords (comma-separated)</Label>
+          <Input
+            id="seo_long_tail_keywords"
+            value={formData.seo_info?.long_tail_keywords?.join(", ") || ""}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                seo_info: {
+                  ...prev.seo_info,
+                  long_tail_keywords: e.target.value.split(",").map((s) => s.trim()),
+                },
+              }))
+            }
+            placeholder="Enter long-tail keywords, comma-separated"
+          />
+        </div>
+        <div>
+          <Label htmlFor="seo_meta_description">Meta Description</Label>
+          <Textarea
+            id="seo_meta_description"
+            value={formData.seo_info?.meta_description || ""}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                seo_info: { ...prev.seo_info, meta_description: e.target.value },
+              }))
+            }
+            placeholder="Enter meta description"
+            rows={3}
+          />
+        </div>
+        <div>
+          <Label htmlFor="seo_related_topics">Related Topics (comma-separated)</Label>
+          <Input
+            id="seo_related_topics"
+            value={formData.seo_info?.related_topics?.join(", ") || ""}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                seo_info: {
+                  ...prev.seo_info,
+                  related_topics: e.target.value.split(",").map((s) => s.trim()),
+                },
+              }))
+            }
+            placeholder="Enter related topics, comma-separated"
+          />
+        </div>
+      </div>
+
+      {/* Structured Data Section */}
+      <div className="space-y-4 border p-4 rounded-md">
+        <h3 className="text-lg font-semibold text-slate-800">Structured Data (JSON-LD)</h3>
+        <div>
+          <Label htmlFor="structured_data">Structured Data JSON</Label>
+          <Textarea
+            id="structured_data"
+            value={JSON.stringify(formData.structured_data, null, 2) || ""}
+            onChange={(e) => {
+              try {
+                setFormData((prev) => ({
+                  ...prev,
+                  structured_data: JSON.parse(e.target.value),
+                }));
+              } catch (error) {
+                console.error("Invalid JSON for structured data:", error);
+                // Optionally, show a toast error to the user
+              }
+            }}
+            placeholder="Enter JSON-LD structured data"
+            rows={10}
+            className="font-mono text-sm"
+          />
         </div>
       </div>
 
@@ -349,6 +471,13 @@ interface ProductClientPageProps {
 export default function ProductClientPage({ initialProducts, initialCategories }: ProductClientPageProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts)
   const [searchTerm, setSearchTerm] = useState("")
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([])
+
+  useEffect(() => {
+    console.log("Initial Products:", initialProducts); // DEBUG LOG
+    setProducts(initialProducts);
+  }, [initialProducts]);
+ 
   const [selectedCategoryIdFilter, setSelectedCategoryIdFilter] = useState("all")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -365,12 +494,14 @@ export default function ProductClientPage({ initialProducts, initialCategories }
     technical_specs: [],
     additional_info: [],
     features: [""],
-    images: [""],
+    images: [{ url: "", alt: "" }],
     videos: [""],
     pdf_document: null,
     badge: "",
     status: "active",
     is_featured: false,
+    seo_info: null,
+    structured_data: null,
   })
 
   const handleAddProduct = async () => {
@@ -384,16 +515,18 @@ export default function ProductClientPage({ initialProducts, initialCategories }
         return
       }
 
-      const cleanedData: ProductFormProps["formData"] = {
+      const cleanedData: any = {
         ...formData,
         features: formData.features.filter((f) => f.trim() !== ""),
-        images: formData.images.filter((img) => img.trim() !== ""),
+        images: formData.images.filter((img) => img.url.trim() !== ""),
         videos: formData.videos.filter((video) => video.trim() !== ""),
         pdf_document: formData.pdf_document,
         rich_description: formData.rich_description,
         technical_specs: formData.technical_specs.filter((spec) => spec.title.trim() !== "" || spec.value.trim() !== ""),
         additional_info: formData.additional_info.filter((info) => info.title.trim() !== "" || info.content.trim() !== ""),
         is_featured: formData.is_featured,
+        seo_info: formData.seo_info,
+        structured_data: formData.structured_data,
       }
 
       const response = await fetch("/api/products", {
@@ -409,9 +542,14 @@ export default function ProductClientPage({ initialProducts, initialCategories }
         throw new Error(errorData.error || "Failed to create product")
       }
 
-      const newProduct = await response.json()
-      setProducts([newProduct, ...products])
-      setIsAddDialogOpen(false)
+      // Ürün eklendikten sonra tüm ürün listesini yeniden çek
+      const updatedProductsResponse = await fetch("/api/products");
+      if (!updatedProductsResponse.ok) {
+        throw new Error("Failed to re-fetch products after add");
+      }
+      const updatedProducts = await updatedProductsResponse.json();
+      setProducts(updatedProducts);
+      setIsAddDialogOpen(false);
       resetForm()
 
       toast({
@@ -431,19 +569,21 @@ export default function ProductClientPage({ initialProducts, initialCategories }
     if (!editingProduct) return
 
     try {
-      const cleanedData: ProductFormProps["formData"] = {
+      const cleanedData: any = {
         ...formData,
         features: formData.features.filter((f) => f.trim() !== ""),
-        images: formData.images.filter((img) => img.trim() !== ""),
+        images: formData.images.filter((img) => img.url.trim() !== ""),
         videos: formData.videos.filter((video) => video.trim() !== ""),
         pdf_document: formData.pdf_document,
         rich_description: formData.rich_description,
         technical_specs: formData.technical_specs.filter((spec) => spec.title.trim() !== "" || spec.value.trim() !== ""),
         additional_info: formData.additional_info.filter((info) => info.title.trim() !== "" || info.content.trim() !== ""),
         is_featured: formData.is_featured,
+        seo_info: formData.seo_info,
+        structured_data: formData.structured_data,
       }
 
-      const response = await fetch(`/api/products/${editingProduct.id}`, {
+      const response = await fetch(`/api/products/${editingProduct.slug}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -456,9 +596,15 @@ export default function ProductClientPage({ initialProducts, initialCategories }
         throw new Error(errorData.error || "Failed to update product")
       }
 
-      const updatedProduct = await response.json()
-      setProducts(products.map((p) => (p.id === editingProduct.id ? updatedProduct : p)))
-      setIsEditDialogOpen(false)
+      // Ürün güncellendikten sonra tüm ürün listesini yeniden çek
+      const updatedProductsResponse = await fetch("/api/products");
+      if (!updatedProductsResponse.ok) {
+        throw new Error("Failed to re-fetch products after edit");
+      }
+      const updatedProducts = await updatedProductsResponse.json();
+      setProducts(updatedProducts);
+      setIsEditDialogOpen(false);
+      setEditingProduct(null);
       setEditingProduct(null)
       resetForm()
 
@@ -486,8 +632,14 @@ export default function ProductClientPage({ initialProducts, initialCategories }
       if (!response.ok) {
         throw new Error("Failed to delete product")
       }
-
-      setProducts(products.filter((p) => p.id !== id))
+ 
+      // Ürün silindikten sonra tüm ürün listesini yeniden çek
+      const updatedProductsResponse = await fetch("/api/products");
+      if (!updatedProductsResponse.ok) {
+        throw new Error("Failed to re-fetch products after delete");
+      }
+      const updatedProducts = await updatedProductsResponse.json();
+      setProducts(updatedProducts);
       toast({
         title: "Success",
         description: "Product deleted successfully",
@@ -503,21 +655,54 @@ export default function ProductClientPage({ initialProducts, initialCategories }
 
   const openEditDialog = (product: Product) => {
     setEditingProduct(product)
+
+    console.log("Product additional_info from database:", product.additional_info); // DEBUG LOG
+
+    // Technical specs'i array formatına çevir (object ise)
+    let technicalSpecsArray: { title: string; value: string }[] = [];
+    if (product.technical_specs) {
+      if (Array.isArray(product.technical_specs)) {
+        technicalSpecsArray = product.technical_specs;
+      } else if (typeof product.technical_specs === 'object') {
+        // Object ise array formatına çevir
+        technicalSpecsArray = Object.entries(product.technical_specs).map(([title, value]) => ({
+          title,
+          value: String(value)
+        }));
+      }
+    }
+
+    // Additional info'yu array formatına çevir
+    let additionalInfoArray: { title: string; content: string }[] = [];
+    if (product.additional_info) {
+      if (Array.isArray(product.additional_info)) {
+        additionalInfoArray = product.additional_info;
+      } else if (typeof product.additional_info === 'object') {
+        // Object ise array formatına çevir
+        additionalInfoArray = Object.entries(product.additional_info).map(([title, content]) => ({
+          title,
+          content: String(content)
+        }));
+      }
+    }
+
     setFormData({
       name: product.name,
-      category_id: product.category_id,
+      category_id: product.category_id || "",
       manufacturer: product.manufacturer,
       price: product.price,
       rich_description: product.rich_description || "",
-      technical_specs: product.technical_specs || [],
-      additional_info: product.additional_info || [],
+      technical_specs: technicalSpecsArray,
+      additional_info: additionalInfoArray.length > 0 ? additionalInfoArray : [{ title: "", content: "" }],
       features: product.features.length > 0 ? product.features : [""],
-      images: product.images.length > 0 ? product.images : [""],
+      images: product.images.length > 0 ? product.images : [{ url: "", alt: "" }],
       videos: product.videos.length > 0 ? product.videos : [""],
       pdf_document: product.pdf_document || null,
       badge: product.badge || "",
       status: product.status,
       is_featured: product.is_featured || false,
+      seo_info: product.seo_info || null,
+      structured_data: product.structured_data || null,
     })
     setIsEditDialogOpen(true)
   }
@@ -532,12 +717,14 @@ export default function ProductClientPage({ initialProducts, initialCategories }
       technical_specs: [],
       additional_info: [],
       features: [""],
-      images: [""],
+      images: [{ url: "", alt: "" }],
       videos: [""],
       pdf_document: null,
       badge: "",
       status: "active",
       is_featured: false,
+      seo_info: null,
+      structured_data: null,
     })
   }
 
@@ -548,6 +735,9 @@ export default function ProductClientPage({ initialProducts, initialCategories }
       }
       if (field === "additional_info") {
         return { ...prev, additional_info: [...prev.additional_info, { title: "", content: "" }] }
+      }
+      if (field === "images") {
+        return { ...prev, images: [...prev.images, { url: "", alt: "" }] }
       }
       // @ts-ignore
       return { ...prev, [field]: [...prev[field], ""] }
@@ -562,15 +752,26 @@ export default function ProductClientPage({ initialProducts, initialCategories }
       if (field === "additional_info") {
         return { ...prev, additional_info: prev.additional_info.filter((_, i) => i !== index) }
       }
+      if (field === "images") {
+        return { ...prev, images: prev.images.filter((_, i) => i !== index) }
+      }
       // @ts-ignore
       return { ...prev, [field]: (prev[field] as any).filter((_, i: number) => i !== index) }
     })
   }
 
-  const updateArrayField = (field: "features" | "images" | "videos", index: number, value: string) => {
+  const updateArrayField = (field: "features" | "videos", index: number, value: string) => {
     setFormData((prev) => ({
       ...prev,
+      // @ts-ignore
       [field]: prev[field].map((item, i) => (i === index ? value : item)),
+    }))
+  }
+
+  const updateImageArrayField = (index: number, key: "url" | "alt", value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      images: prev.images.map((item, i) => (i === index ? { ...item, [key]: value } : item)),
     }))
   }
 
@@ -594,6 +795,58 @@ export default function ProductClientPage({ initialProducts, initialCategories }
     return matchesSearch && matchesCategory
   })
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedProductIds(filteredProducts.map((p) => p.id))
+    } else {
+      setSelectedProductIds([])
+    }
+  }
+
+  const handleSelectProduct = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedProductIds((prev) => [...prev, id])
+    } else {
+      setSelectedProductIds((prev) => prev.filter((productId) => productId !== id))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Are you sure you want to delete ${selectedProductIds.length} selected products?`)) return
+
+    try {
+      const response = await fetch("/api/admin/products/bulk-actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete", productIds: selectedProductIds }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to delete products")
+      }
+
+      const updatedProductsResponse = await fetch("/api/products")
+      if (!updatedProductsResponse.ok) {
+        throw new Error("Failed to re-fetch products after bulk delete")
+      }
+      const updatedProducts = await updatedProductsResponse.json()
+      setProducts(updatedProducts)
+      setSelectedProductIds([])
+
+      toast({
+        title: "Success",
+        description: `${selectedProductIds.length} products deleted successfully.`,
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      })
+    }
+  }
+ 
   return (
     <div className="container mx-auto py-8 space-y-8">
       <div className="flex items-center justify-between">
@@ -601,33 +854,45 @@ export default function ProductClientPage({ initialProducts, initialCategories }
           <h1 className="text-3xl font-bold text-slate-900">Product Management</h1>
           <p className="text-slate-600 mt-2">Manage your product catalog</p>
         </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-slate-900">Add New Product</DialogTitle>
-              <DialogDescription>Fill in the details below to add a new product to the catalog.</DialogDescription>
-            </DialogHeader>
-            <ProductForm
-              formData={formData}
-              setFormData={setFormData}
-              addArrayField={addArrayField}
-              removeArrayField={removeArrayField}
-              updateArrayField={updateArrayField}
-              updateObjectArrayField={updateObjectArrayField}
-              categories={initialCategories}
-              handleAddProduct={handleAddProduct}
-              handleEditProduct={handleEditProduct}
-              resetForm={resetForm}
-              setIsAddDialogOpen={setIsAddDialogOpen}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-bold text-slate-900">Add New Product</DialogTitle>
+                <DialogDescription>Fill in the details below to add a new product to the catalog.</DialogDescription>
+              </DialogHeader>
+              <ProductForm
+                formData={formData}
+                setFormData={setFormData}
+                addArrayField={addArrayField}
+                removeArrayField={removeArrayField}
+                updateArrayField={updateArrayField}
+                updateImageArrayField={updateImageArrayField}
+                updateObjectArrayField={updateObjectArrayField}
+                categories={initialCategories}
+                handleAddProduct={handleAddProduct}
+                handleEditProduct={handleEditProduct}
+                resetForm={resetForm}
+                setIsAddDialogOpen={setIsAddDialogOpen}
+              />
+            </DialogContent>
+          </Dialog>
+
+        <Button
+          variant="outline"
+          className="border-green-600 text-green-600 hover:bg-green-50"
+          onClick={() => window.location.href = '/admin/products/json-import'}
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          JSON Import
+        </Button>
+      </div>
       </div>
 
       {/* Stats Cards */}
@@ -699,12 +964,45 @@ export default function ProductClientPage({ initialProducts, initialCategories }
         </div>
       </div>
 
+      {/* Bulk Actions */}
+      {selectedProductIds.length > 0 && (
+        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border">
+          <div className="text-sm font-medium text-slate-700">
+            {selectedProductIds.length} product{selectedProductIds.length > 1 ? "s" : ""} selected
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <MoreHorizontal className="h-4 w-4 mr-2" />
+                Bulk Actions
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleBulkDelete} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                Delete Selected
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+
       {/* Products Table */}
       <Card>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[50px]">
+                  <Checkbox
+                    checked={
+                      filteredProducts.length > 0 && selectedProductIds.length === filteredProducts.length
+                    }
+                    onCheckedChange={handleSelectAll}
+                    aria-label="Select all"
+                  />
+                </TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Manufacturer</TableHead>
@@ -717,14 +1015,21 @@ export default function ProductClientPage({ initialProducts, initialCategories }
             </TableHeader>
             <TableBody>
               {filteredProducts.map((product) => (
-                <TableRow key={product.id}>
+                <TableRow key={product.id} data-state={selectedProductIds.includes(product.id) && "selected"}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedProductIds.includes(product.id)}
+                      onCheckedChange={(checked) => handleSelectProduct(product.id, !!checked)}
+                      aria-label={`Select product ${product.name}`}
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
-                        {product.images.length > 0 ? (
+                        {product.images.length > 0 && (product.images[0] as any).url ? (
                           <img
-                            src={product.images[0] || "/placeholder.svg"}
-                            alt={product.name}
+                            src={(product.images[0] as any).url}
+                            alt={(product.images[0] as any).alt || product.name}
                             className="w-full h-full object-cover rounded-lg"
                           />
                         ) : (
@@ -820,6 +1125,7 @@ export default function ProductClientPage({ initialProducts, initialCategories }
               addArrayField={addArrayField}
               removeArrayField={removeArrayField}
               updateArrayField={updateArrayField}
+              updateImageArrayField={updateImageArrayField}
               updateObjectArrayField={updateObjectArrayField}
               categories={initialCategories}
               handleAddProduct={handleAddProduct}

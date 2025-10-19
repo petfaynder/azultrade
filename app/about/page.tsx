@@ -62,6 +62,7 @@ export default function AboutPage() {
                   width={700}
                   height={600}
                   className="rounded-3xl shadow-2xl"
+                  priority
                 />
                 <div className="absolute -bottom-6 -right-6 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl p-6 shadow-2xl">
                   <div className="text-center">

@@ -8,6 +8,7 @@ import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { Toaster } from "@/components/ui/toaster"
 import { CookieConsent } from "@/components/ui/cookie-consent"
+import { CompareProvider } from "@/contexts/CompareContext"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,11 +23,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        {!isAdminPage && <Header />}
-        <PageTransitionWrapper>{children}</PageTransitionWrapper>
-        {!isAdminPage && <Footer />}
-        <Toaster />
-        <CookieConsent />
+        <CompareProvider>
+          {!isAdminPage && <Header />}
+          <PageTransitionWrapper>{children}</PageTransitionWrapper>
+          {!isAdminPage && <Footer />}
+          <Toaster />
+          <CookieConsent />
+        </CompareProvider>
       </body>
     </html>
   )

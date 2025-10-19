@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { ArrowRight, Globe, Users, Award, TrendingUp, Eye, Heart, CalendarDays, Tag, Plus } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { getProducts, getBlogPosts } from "@/lib/database"
 import { FadeInSection } from "@/components/fade-in-section"
 
@@ -100,10 +101,13 @@ export default async function HomePage() {
               <Card className="bg-white/10 backdrop-blur-sm border-white/20">
                 <CardContent className="p-8">
                   <div className="aspect-square bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center">
-                    <img
+                    <Image
                       src="/heroplaceholder.png"
                       alt="Global Trade"
+                      width={500}
+                      height={500}
                       className="w-full h-full object-cover rounded-2xl opacity-90"
+                      priority
                     />
                   </div>
                 </CardContent>
@@ -176,11 +180,11 @@ export default async function HomePage() {
           <div className="relative container mx-auto px-4 text-center">
             <h2 className="text-3xl lg:text-4xl font-bold mb-12">Our Trusted Partners</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 items-center justify-center">
-              <img src="/partners/GlobalCargo.svg" alt="GlobalCargo Logo" className="h-12 mx-auto opacity-80 hover:opacity-100 transition-opacity" />
-              <img src="/partners/TradeNet.svg" alt="TradeNet Logo" className="h-12 mx-auto opacity-80 hover:opacity-100 transition-opacity" />
-              <img src="/partners/SeaLane.svg" alt="SeaLane Logo" className="h-12 mx-auto opacity-80 hover:opacity-100 transition-opacity" />
-              <img src="/partners/AirWay.svg" alt="AirWay Logo" className="h-12 mx-auto opacity-80 hover:opacity-100 transition-opacity" />
-              <img src="/partners/TerraLogistics.svg" alt="TerraLogistics Logo" className="h-12 mx-auto opacity-80 hover:opacity-100 transition-opacity" />
+              <Image src="/partners/GlobalCargo.svg" alt="GlobalCargo Logo" width={150} height={60} className="h-12 w-auto mx-auto opacity-80 hover:opacity-100 transition-opacity" />
+              <Image src="/partners/TradeNet.svg" alt="TradeNet Logo" width={150} height={60} className="h-12 w-auto mx-auto opacity-80 hover:opacity-100 transition-opacity" />
+              <Image src="/partners/SeaLane.svg" alt="SeaLane Logo" width={150} height={60} className="h-12 w-auto mx-auto opacity-80 hover:opacity-100 transition-opacity" />
+              <Image src="/partners/AirWay.svg" alt="AirWay Logo" width={150} height={60} className="h-12 w-auto mx-auto opacity-80 hover:opacity-100 transition-opacity" />
+              <Image src="/partners/TerraLogistics.svg" alt="TerraLogistics Logo" width={150} height={60} className="h-12 w-auto mx-auto opacity-80 hover:opacity-100 transition-opacity" />
             </div>
           </div>
         </section>
@@ -204,9 +208,11 @@ export default async function HomePage() {
                     <div className="relative">
                       <div className="aspect-square bg-slate-100 overflow-hidden">
                         {product.images.length > 0 ? (
-                          <img
+                          <Image
                             src={product.images[0] || "/placeholder.svg"}
                             alt={product.name}
+                            width={400}
+                            height={400}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         ) : (
@@ -315,9 +321,11 @@ export default async function HomePage() {
                   <Card key={post.id} className="group hover:shadow-xl transition-all duration-300 overflow-hidden">
                     <CardContent className="p-0">
                       <div className="aspect-video bg-slate-100 overflow-hidden">
-                        <img
+                        <Image
                           src={post.image || "/placeholder.svg"}
                           alt={post.title}
+                          width={400}
+                          height={225}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       </div>
@@ -378,7 +386,7 @@ export default async function HomePage() {
                 Hear from businesses that have achieved global success with Azul Global Trade
               </p>
             </div>
-
+ 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               <Card className="p-8 shadow-md hover:shadow-lg transition-shadow">
                 <CardContent className="space-y-4">
@@ -441,7 +449,7 @@ export default async function HomePage() {
           </div>
         </section>
       </FadeInSection>
-
+ 
       {/* How It Works Section */}
       <FadeInSection delay={1.2}>
         <section className="py-20 bg-white">
@@ -452,7 +460,7 @@ export default async function HomePage() {
                 Our streamlined process ensures a smooth and efficient global trade experience
               </p>
             </div>
-
+ 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <Card className="text-center p-8 shadow-md hover:shadow-lg transition-shadow">
                 <CardContent className="space-y-4">
@@ -491,7 +499,7 @@ export default async function HomePage() {
           </div>
         </section>
       </FadeInSection>
-
+ 
       {/* FAQ Section */}
       <FadeInSection delay={1.4}>
         <section className="py-20 bg-slate-100">
@@ -502,7 +510,7 @@ export default async function HomePage() {
                 Find answers to common questions about our services and global trade
               </p>
             </div>
-
+ 
             <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto">
               <AccordionItem value="item-1">
                 <AccordionTrigger className="text-lg font-semibold text-slate-900 hover:no-underline">
@@ -543,7 +551,7 @@ export default async function HomePage() {
           </div>
         </section>
       </FadeInSection>
-
+ 
       {/* CTA Section */}
       <FadeInSection delay={1.6}>
         <section className="py-20 bg-blue-900 text-white">

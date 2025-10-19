@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Package, FileText, Users, Settings, LogOut, Menu, X, Bell, Search, Mail as MailIcon, ClipboardList } from "lucide-react"
+import { LayoutDashboard, Package, FileText, Users, Settings, LogOut, Menu, X, Bell, Search, Mail as MailIcon, ClipboardList, Target, Lightbulb, Image as ImageIcon } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { usePathname } from "next/navigation"
@@ -14,15 +14,19 @@ import { Input } from "@/components/ui/input"
 import { Suspense } from "react"
 
 const navigation = [
-  { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { name: "Messages", href: "/admin/messages", icon: MailIcon },
-  { name: "Quote Requests", href: "/admin/quotes", icon: ClipboardList },
-  { name: "Products", href: "/admin/products", icon: Package },
-  { name: "Categories", href: "/admin/categories", icon: Package },
-  { name: "Blog", href: "/admin/blog", icon: FileText },
-  { name: "Users", href: "/admin/users", icon: Users },
-  { name: "Settings", href: "/admin/settings", icon: Settings },
-]
+   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+   { name: "Messages", href: "/admin/messages", icon: MailIcon },
+   { name: "Quote Requests", href: "/admin/quotes", icon: ClipboardList },
+   { name: "Products", href: "/admin/products", icon: Package },
+   { name: "SEO Dashboard", href: "/admin/seo-dashboard", icon: Target },
+   { name: "Content Opportunities", href: "/admin/content-opportunities", icon: Lightbulb },
+   { name: "Categories", href: "/admin/categories", icon: Package },
+   { name: "Blog", href: "/admin/blog", icon: FileText },
+   { name: "JSON Blog Create", href: "/admin/blog/json-create", icon: FileText },
+   { name: "Image Upload", href: "/admin/image-upload", icon: ImageIcon }, // New entry
+   { name: "Users", href: "/admin/users", icon: Users },
+   { name: "Settings", href: "/admin/settings", icon: Settings },
+ ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)

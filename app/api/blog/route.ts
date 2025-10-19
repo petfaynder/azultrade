@@ -6,10 +6,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get("category")
     const search = searchParams.get("search")
+    const limit = searchParams.get("limit")
+    const excludeId = searchParams.get("excludeId")
 
-    const filters: { category?: string; search?: string } = {}
+    const filters: { category?: string; search?: string; limit?: number; excludeId?: string } = {}
     if (category) filters.category = category
     if (search) filters.search = search
+    if (limit) filters.limit = parseInt(limit, 10)
+    if (excludeId) filters.excludeId = excludeId
 
     console.log("API: Fetching blog posts with filters:", filters)
     const posts = await getBlogPosts(filters)

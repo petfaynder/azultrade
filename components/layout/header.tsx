@@ -3,10 +3,12 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, X, Globe, Phone, Mail } from "lucide-react"
-
+import { Menu, X, Globe, Phone, Mail, GitCompareArrows } from "lucide-react"
+import { useCompare } from "@/contexts/CompareContext"
+ 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { compareList } = useCompare()
 
   const navigation = [
     { name: "Home", href: "/" },
@@ -66,8 +68,16 @@ export function Header() {
                 {item.name}
               </Link>
             ))}
+            <Link href="/compare" className="relative text-slate-700 hover:text-blue-600">
+              <GitCompareArrows className="h-6 w-6" />
+              {compareList.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {compareList.length}
+                </span>
+              )}
+            </Link>
           </nav>
-
+ 
           {/* CTA Button */}
           <div className="hidden md:flex items-center space-x-4">
             <Button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white">

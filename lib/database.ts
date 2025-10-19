@@ -12,9 +12,22 @@ export interface Category {
   product_count?: number // Kategoriye ait ürün sayısı
 }
 
+export interface SeoInfo {
+  primary_keyword: string;
+  long_tail_keywords: string[];
+  meta_description: string;
+  related_topics?: string[];
+}
+
+export interface ImageInfo {
+  url: string;
+  alt: string;
+}
+
 export interface Product {
   id: string
   name: string
+  slug: string
   category_id: string // Foreign key to categories table
   category_name?: string // Joined from categories table for display
   manufacturer: string
@@ -23,7 +36,7 @@ export interface Product {
   technical_specs: { title: string; value: string }[]
   additional_info: { title: string; content: string }[]
   features: string[]
-  images: string[]
+  images: ImageInfo[]
   videos: string[]
   pdf_document?: string | null
   badge?: string
@@ -32,6 +45,10 @@ export interface Product {
   created_at: string
   updated_at: string
   is_featured?: boolean
+  seo_info?: SeoInfo;
+  structured_data?: any; // Can be more specific if needed
+  has_meta_description?: boolean;
+  has_blog_content?: boolean;
 }
 
 export interface BlogPost {
@@ -39,7 +56,7 @@ export interface BlogPost {
   title: string
   slug: string
   excerpt: string
-  content: string
+  content: string // Changed to string to store HTML
   author: string
   author_role: string
   category: string
@@ -54,6 +71,7 @@ export interface BlogPost {
   read_time: string
   created_at: string
   updated_at: string
+  related_products?: { id: string; name: string; slug: string }[]; // New field for linking products
 }
 
 export interface Stats {
@@ -66,6 +84,7 @@ export interface Stats {
 // Category functions
 export async function getCategories(filters?: { sortBy?: string; sortOrder?: "asc" | "desc" }) {
   try {
+
     let query = supabase.from("categories").select("*")
 
     if (filters?.sortBy) {
@@ -106,6 +125,7 @@ export async function getCategories(filters?: { sortBy?: string; sortOrder?: "as
 
 export async function getCategory(id: string) {
   try {
+
     const { data, error } = await supabase.from("categories").select("*").eq("id", id).single()
 
     if (error) {
@@ -122,6 +142,7 @@ export async function getCategory(id: string) {
 
 export async function createCategory(category: Omit<Category, "id" | "created_at" | "updated_at">) {
   try {
+
     const { data, error } = await supabase.from("categories").insert([category]).select().single()
 
     if (error) {
@@ -138,6 +159,7 @@ export async function createCategory(category: Omit<Category, "id" | "created_at
 
 export async function updateCategory(id: string, category: Partial<Category>) {
   try {
+
     const { data, error } = await supabase.from("categories").update(category).eq("id", id).select().single()
 
     if (error) {
@@ -154,6 +176,7 @@ export async function updateCategory(id: string, category: Partial<Category>) {
 
 export async function deleteCategory(id: string) {
   try {
+
     const { error } = await supabase.from("categories").delete().eq("id", id)
 
     if (error) {
@@ -167,12 +190,19 @@ export async function deleteCategory(id: string) {
 }
 
 // Product functions
-export async function getProducts(filters?: { category?: string; search?: string; is_featured?: boolean; limit?: number }) {
+export async function getProducts(filters?: { category?: string; search?: string; is_featured?: boolean; limit?: number; sortBy?: string; sortOrder?: string; }) {
   try {
+
     let query = supabase
       .from("products")
-      .select("*, categories(name)") // Join with categories table to get category name
-      .order("created_at", { ascending: false })
+      .select("id, name, slug, category_id, manufacturer, price, rich_description, technical_specs, additional_info, features, images, videos, pdf_document, badge, status, views, created_at, updated_at, is_featured, seo_info, structured_data, categories(name)")
+    
+    // Sorting logic
+    if (filters?.sortBy && filters?.sortOrder) {
+      query = query.order(filters.sortBy, { ascending: filters.sortOrder === 'asc' });
+    } else {
+      query = query.order("created_at", { ascending: false });
+    }
 
     if (filters?.category) {
       query = query.eq("category_id", filters.category)
@@ -199,6 +229,23 @@ export async function getProducts(filters?: { category?: string; search?: string
       throw new Error(`Database error: ${error.message}`)
     }
 
+    // Fetch all blog posts to check for related products
+    const { data: blogPostsData, error: blogPostsError } = await supabase
+      .from("blog_posts")
+      .select("related_products");
+
+    if (blogPostsError) {
+      console.error("Database error in getProducts (fetching blog posts):", blogPostsError);
+      throw new Error(`Database error: ${blogPostsError.message}`);
+    }
+
+    const allRelatedProductIds = new Set<string>();
+    blogPostsData?.forEach(post => {
+      post.related_products?.forEach((product: { id: string }) => {
+        allRelatedProductIds.add(product.id);
+      });
+    });
+
     // Ensure arrays are properly initialized and map category name
     const processedData =
       data?.map((product: any) => ({
@@ -209,6 +256,10 @@ export async function getProducts(filters?: { category?: string; search?: string
         features: product.features || [],
         technical_specs: product.technical_specs || [],
         additional_info: product.additional_info || [],
+        seo_info: product.seo_info || null,
+        structured_data: product.structured_data || null,
+        has_meta_description: !!product.seo_info?.meta_description && product.seo_info.meta_description.trim().length > 0,
+        has_blog_content: allRelatedProductIds.has(product.id),
       })) || []
 
     return processedData as Product[]
@@ -220,15 +271,20 @@ export async function getProducts(filters?: { category?: string; search?: string
 
 export async function getProduct(id: string) {
   try {
+
     const { data, error } = await supabase
       .from("products")
-      .select("*, categories(name)") // Join with categories table to get category name
+      .select("id, name, slug, category_id, manufacturer, price, rich_description, technical_specs, additional_info, features, images, videos, pdf_document, badge, status, views, created_at, updated_at, is_featured, seo_info, structured_data, categories(name)")
       .eq("id", id)
-      .single()
+      .maybeSingle()
 
     if (error) {
       console.error("Database error in getProduct:", error)
       throw new Error(`Database error: ${error.message}`)
+    }
+
+    if (!data) {
+      return null;
     }
 
     // Ensure arrays are properly initialized and map category name
@@ -240,6 +296,8 @@ export async function getProduct(id: string) {
       features: data.features || [],
       technical_specs: data.technical_specs || [],
       additional_info: data.additional_info || [],
+      seo_info: data.seo_info || null,
+      structured_data: data.structured_data || null,
     } as Product
 
     return processedData
@@ -249,14 +307,54 @@ export async function getProduct(id: string) {
   }
 }
 
+export async function getProductBySlug(slug: string) {
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select("id, name, slug, category_id, manufacturer, price, rich_description, technical_specs, additional_info, features, images, videos, pdf_document, badge, status, views, created_at, updated_at, is_featured, seo_info, structured_data, categories(name)")
+      .eq("slug", slug)
+      .maybeSingle()
+
+    if (error) {
+      if (error.code === 'PGRST116') { // Not found
+        return null;
+      }
+      console.error("Database error in getProductBySlug:", error)
+      throw new Error(`Database error: ${error.message}`)
+    }
+
+    if (!data) {
+      return null;
+    }
+    
+    const processedData: Product = {
+      ...data,
+      category_name: (data as any).categories?.name || "Uncategorized",
+      images: data.images || [],
+      videos: data.videos || [],
+      features: data.features || [],
+      technical_specs: data.technical_specs || [],
+      additional_info: data.additional_info || [],
+      seo_info: data.seo_info || null,
+      structured_data: data.structured_data || null,
+    } as Product
+
+    return processedData
+  } catch (error) {
+    console.error("Error in getProductBySlug:", error)
+    throw error
+  }
+}
+
 export async function createProduct(product: Omit<Product, "id" | "views" | "created_at" | "updated_at" | "category_name">) {
   try {
+
     console.log("Database: Creating product with data:", product)
 
     // Ensure arrays are properly formatted and clean up empty strings
     const cleanedProduct = {
       ...product,
-      images: (product.images || []).filter((img) => img && img.trim() !== ""),
+      images: (product.images || []).filter((img) => img.url && img.url.trim() !== ""),
       videos: (product.videos || []).filter((video) => video && video.trim() !== ""),
       features: (product.features || []).filter((feature) => feature && feature.trim() !== ""),
       pdf_document: product.pdf_document?.trim() || null,
@@ -264,6 +362,8 @@ export async function createProduct(product: Omit<Product, "id" | "views" | "cre
       technical_specs: product.technical_specs || [],
       additional_info: product.additional_info || [],
       views: 0,
+      seo_info: product.seo_info || null,
+      structured_data: product.structured_data || null,
     }
 
     const { data, error } = await supabase.from("products").insert([cleanedProduct]).select().single()
@@ -283,10 +383,11 @@ export async function createProduct(product: Omit<Product, "id" | "views" | "cre
 
 export async function updateProduct(id: string, product: Partial<Omit<Product, "category_name">>) {
   try {
+
     // Clean up arrays if they exist in the update
     const cleanedProduct = { ...product }
     if (cleanedProduct.images) {
-      cleanedProduct.images = cleanedProduct.images.filter((img) => img && img.trim() !== "")
+      cleanedProduct.images = cleanedProduct.images.filter((img) => img.url && img.url.trim() !== "")
     }
     if (cleanedProduct.videos) {
       cleanedProduct.videos = cleanedProduct.videos.filter((video) => video && video.trim() !== "")
@@ -320,6 +421,7 @@ export async function updateProduct(id: string, product: Partial<Omit<Product, "
 
 export async function deleteProduct(id: string) {
   try {
+
     const { error } = await supabase.from("products").delete().eq("id", id)
 
     if (error) {
@@ -334,6 +436,7 @@ export async function deleteProduct(id: string) {
 
 export async function incrementProductViews(id: string) {
   try {
+
     const { error } = await supabase.rpc("increment_product_views", {
       product_id: id,
     })
@@ -349,12 +452,17 @@ export async function incrementProductViews(id: string) {
 }
 
 // Blog functions
-export async function getBlogPosts(filters?: { category?: string; search?: string; limit?: number }) {
+export async function getBlogPosts(filters?: { category?: string; search?: string; limit?: number; excludeId?: string }) {
   try {
-    let query = supabase.from("blog_posts").select("*").order("publish_date", { ascending: false })
 
+    let query = supabase.from("blog_posts").select("*").order("publish_date", { ascending: false })
+ 
     if (filters?.category && filters.category !== "All Categories") {
       query = query.eq("category", filters.category)
+    }
+ 
+    if (filters?.excludeId) {
+      query = query.neq("id", filters.excludeId)
     }
 
     if (filters?.search) {
@@ -383,6 +491,7 @@ export async function getBlogPosts(filters?: { category?: string; search?: strin
 
 export async function getBlogPostBySlug(slug: string) {
   try {
+
     const { data, error } = await supabase.from("blog_posts").select("*").eq("slug", slug).single()
 
     if (error) {
@@ -399,6 +508,7 @@ export async function getBlogPostBySlug(slug: string) {
 
 export async function getBlogPostById(id: string) {
   try {
+
     const { data, error } = await supabase.from("blog_posts").select("*").eq("id", id).single()
 
     if (error) {
@@ -417,15 +527,17 @@ export async function createBlogPost(
   post: Omit<BlogPost, "id" | "views" | "likes" | "comments" | "created_at" | "updated_at">,
 ) {
   try {
+
     console.log("Database: Creating blog post with data:", post)
 
-    // Ensure status is set
+    // Ensure status is set and related_products is properly formatted
     const postData = {
       ...post,
       status: post.status || "published",
       views: 0,
       likes: 0,
       comments: 0,
+      related_products: post.related_products || [],
     }
 
     console.log("Database: Final blog post data:", postData)
@@ -447,7 +559,15 @@ export async function createBlogPost(
 
 export async function updateBlogPost(id: string, post: Partial<BlogPost>) {
   try {
-    const { data, error } = await supabase.from("blog_posts").update(post).eq("id", id).select().single()
+    // Ensure related_products is properly formatted if it exists in the update
+    const cleanedPost = { ...post };
+    if (cleanedPost.related_products) {
+      cleanedPost.related_products = cleanedPost.related_products.filter(
+        (product) => product.id && product.name && product.slug
+      );
+    }
+
+    const { data, error } = await supabase.from("blog_posts").update(cleanedPost).eq("id", id).select().single()
 
     if (error) {
       console.error("Database error in updateBlogPost:", error)
@@ -463,6 +583,7 @@ export async function updateBlogPost(id: string, post: Partial<BlogPost>) {
 
 export async function deleteBlogPost(id: string) {
   try {
+
     const { error } = await supabase.from("blog_posts").delete().eq("id", id)
 
     if (error) {
@@ -477,6 +598,7 @@ export async function deleteBlogPost(id: string) {
 
 export async function incrementBlogViews(id: string) {
   try {
+
     const { error } = await supabase.rpc("increment_blog_views", {
       post_id: id,
     })
@@ -493,6 +615,7 @@ export async function incrementBlogViews(id: string) {
 
 export async function incrementBlogLikes(id: string) {
   try {
+
     const { error } = await supabase.rpc("increment_blog_likes", {
       post_id: id,
     })
@@ -510,6 +633,7 @@ export async function incrementBlogLikes(id: string) {
 // Stats function
 export async function getStats() {
   try {
+
     const { data, error } = await supabase.rpc("get_stats")
 
     if (error) {
@@ -548,16 +672,17 @@ export async function getMessages(filters: {
 }): Promise<{ data: Message[]; count: number }> {
   try {
     // --- DEBUGGING LINES START ---
+
     const { data: { user } } = await supabase.auth.getUser();
     const { status, sortBy = 'created_at', sortOrder = 'desc', search, page = 1, limit = 10 } = filters;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
-
-    let query = supabase
-      .from('messages')
-      .select('*', { count: 'exact' })
-      .order(sortBy, { ascending: sortOrder === 'asc' })
-      .range(from, to);
+ 
+     let query = supabase
+       .from('messages')
+       .select('*', { count: 'exact' })
+       .order(sortBy, { ascending: sortOrder === 'asc' })
+       .range(from, to);
 
     if (status && status !== 'Tümü') {
       query = query.eq('status', status);
@@ -584,6 +709,7 @@ export async function getMessages(filters: {
 export async function getMessageById(id: string): Promise<Message | null> {
   try {
     // First, fetch the message
+
     const { data: message, error: fetchError } = await supabase
       .from('messages')
       .select('*')
@@ -622,6 +748,7 @@ export async function getMessageById(id: string): Promise<Message | null> {
 
 export async function getQuotesAdmin() {
   try {
+
     const { data, error } = await supabase
       .from('quotes')
       .select(`

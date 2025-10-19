@@ -12,17 +12,20 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import type { Product, Category } from "@/lib/database"
 import { FadeInSection } from "@/components/fade-in-section"
-
+import { useCompare } from "@/contexts/CompareContext"
+ 
 export default function ProductsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const productsRef = useRef<HTMLDivElement>(null)
+  const { addToCompare } = useCompare()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategoryId, setSelectedCategoryId] = useState("all")
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingCategories, setLoadingCategories] = useState(true)
+  const [sortBy, setSortBy] = useState("name-asc")
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -55,6 +58,11 @@ export default function ProductsPage() {
         params.append("search", searchTerm)
       }
 
+      if (sortBy) {
+        params.append("sortBy", sortBy.split('-')[0]);
+        params.append("sortOrder", sortBy.split('-')[1]);
+      }
+
       const response = await fetch(`/api/products?${params.toString()}`)
       if (response.ok) {
         const data = await response.json()
@@ -82,7 +90,11 @@ export default function ProductsPage() {
     if (selectedCategoryId !== "all") {
       productsRef.current?.scrollIntoView({ behavior: "smooth" })
     }
-  }, [selectedCategoryId, searchTerm])
+  }, [selectedCategoryId, searchTerm, sortBy])
+ 
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+  };
 
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategoryId(categoryId)
@@ -200,6 +212,16 @@ export default function ProductsPage() {
                 <Button onClick={handleSearch} className="h-12 px-8 bg-blue-600 hover:bg-blue-700">
                   Search
                 </Button>
+                <Select onValueChange={handleSortChange}>
+                  <SelectTrigger className="w-full md:w-[200px] h-12">
+                    <SelectValue placeholder="Sort by..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                    <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                    <SelectItem value="views-desc">Popularity</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -228,14 +250,15 @@ export default function ProductsPage() {
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {products.map((product) => (
                   <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                    <Link href={`/products/${product.id}`}>
+                    <Link href={`/products/${product.slug}`}>
                       <div className="relative">
                         <Image
-                          src={product.images && product.images.length > 0 ? product.images[0] : "/placeholder.svg"}
-                          alt={product.name}
+                          src={product.images && product.images.length > 0 ? product.images[0].url : "/placeholder.svg"}
+                          alt={product.images && product.images.length > 0 ? product.images[0].alt : product.name}
                           width={400}
                           height={300}
                           className="w-full h-48 object-cover"
+                          loading="lazy"
                         />
                         {product.badge && (
                           <Badge className="absolute top-3 left-3 bg-blue-600 text-white">{product.badge}</Badge>
@@ -282,12 +305,15 @@ export default function ProductsPage() {
                               <MessageCircle className="h-4 w-4 mr-2" />
                               WhatsApp
                             </a>
-                            <Link href={`/products/${product.id}`} className="flex-1">
+                            <Link href={`/products/${product.slug}`} className="flex-1">
                               <Button variant="outline" className="w-full bg-transparent">
                                 Details
                                 <ArrowRight className="ml-2 h-4 w-4" />
                               </Button>
                             </Link>
+                            <Button variant="secondary" className="flex-1" onClick={() => addToCompare(product)}>
+                              Compare
+                            </Button>
                           </div>
                         </div>
                       </div>
