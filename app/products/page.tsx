@@ -109,6 +109,14 @@ export default function ProductsPage() {
     fetchProducts()
   }
 
+  const stripHtml = (html: string) => {
+    if (typeof window !== "undefined") {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      return doc.body.textContent || "";
+    }
+    return html;
+  };
+
   if (loadingCategories) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -183,7 +191,7 @@ export default function ProductsPage() {
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
               <h2 className="text-2xl font-bold text-gray-900">
-                {selectedCategoryId && selectedCategoryId !== "all" ? `Products in ${categories.find(cat => cat.id === selectedCategoryId)?.name || "Selected Category"}` : "All Products"}
+                {selectedCategoryId && selectedCategoryId !== "all" ? `${categories.find(cat => cat.id === selectedCategoryId)?.name || "Selected"} Category` : "All Products"}
               </h2>
               <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
                 <div className="flex-1 relative">
@@ -273,7 +281,7 @@ export default function ProductsPage() {
                           </Badge>
                           <h3 className="text-xl font-semibold mb-2">{product.name}</h3>
                           <p className="text-sm text-gray-600 mb-2">by {product.manufacturer}</p>
-                          <p className="text-gray-600 text-sm leading-relaxed">{product.rich_description?.substring(0, 100)}...</p>
+                          <p className="text-gray-600 text-sm leading-relaxed">{stripHtml(product.rich_description || "").substring(0, 100)}...</p>
                         </div>
 
                         <div>

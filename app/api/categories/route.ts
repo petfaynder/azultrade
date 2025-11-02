@@ -10,8 +10,13 @@ export async function GET(request: NextRequest) {
     const sortOrder = (searchParams.get("sortOrder") as "asc" | "desc") || undefined
 
     const categories = await getCategories({ sortBy, sortOrder })
+    const cleanedCategories = categories.map(category => ({
+      ...category,
+      name: category.name.replace(/ kategorisi$/i, "").trim(),
+      description: category.description?.replace(/ kategorisi$/i, "").trim()
+    }));
     console.log(`API: Successfully fetched ${categories.length} categories`)
-    return NextResponse.json(categories)
+    return NextResponse.json(cleanedCategories)
   } catch (error) {
     console.error("API Error in GET /api/categories:", error)
     return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 })
