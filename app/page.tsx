@@ -209,7 +209,7 @@ export default async function HomePage() {
                       <div className="aspect-square bg-slate-100 overflow-hidden">
                         {product.images.length > 0 ? (
                           <Image
-                            src={product.images[0] || "/placeholder.svg"}
+                            src={product.images[0].url || "/placeholder.svg"}
                             alt={product.name}
                             width={400}
                             height={400}
