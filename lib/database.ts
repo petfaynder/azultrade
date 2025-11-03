@@ -49,6 +49,8 @@ export interface Product {
   structured_data?: any; // Can be more specific if needed
   has_meta_description?: boolean;
   has_blog_content?: boolean;
+  seo_score?: number;
+  keyword_density?: number;
 }
 
 export interface BlogPost {
@@ -190,7 +192,7 @@ export async function deleteCategory(id: string) {
 }
 
 // Product functions
-export async function getProducts(filters?: { category?: string; search?: string; is_featured?: boolean; limit?: number; sortBy?: string; sortOrder?: string; }) {
+export async function getProducts(filters?: { category?: string; search?: string; is_featured?: boolean; limit?: number; sortBy?: string; sortOrder?: string; include_seo?: boolean; }) {
   try {
 
     let query = supabase
@@ -232,35 +234,76 @@ export async function getProducts(filters?: { category?: string; search?: string
     // Fetch all blog posts to check for related products
     const { data: blogPostsData, error: blogPostsError } = await supabase
       .from("blog_posts")
-      .select("related_products");
+      .select("id, related_products");
 
     if (blogPostsError) {
       console.error("Database error in getProducts (fetching blog posts):", blogPostsError);
       throw new Error(`Database error: ${blogPostsError.message}`);
     }
 
-    const allRelatedProductIds = new Set<string>();
+    const productBlogPostCounts = new Map<string, number>();
     blogPostsData?.forEach(post => {
       post.related_products?.forEach((product: { id: string }) => {
-        allRelatedProductIds.add(product.id);
+        productBlogPostCounts.set(product.id, (productBlogPostCounts.get(product.id) || 0) + 1);
       });
     });
 
-    // Ensure arrays are properly initialized and map category name
-    const processedData =
-      data?.map((product: any) => ({
-        ...product,
-        category_name: product.categories?.name || "Uncategorized", // Map joined category name
-        images: product.images || [],
-        videos: product.videos || [],
-        features: product.features || [],
-        technical_specs: product.technical_specs || [],
-        additional_info: product.additional_info || [],
-        seo_info: product.seo_info || null,
-        structured_data: product.structured_data || null,
-        has_meta_description: !!product.seo_info?.meta_description && product.seo_info.meta_description.trim().length > 0,
-        has_blog_content: allRelatedProductIds.has(product.id),
-      })) || []
+    // Process data
+    let processedData = data?.map((product: any) => ({
+      ...product,
+      category_name: product.categories?.name || "Uncategorized",
+      images: product.images || [],
+      videos: product.videos || [],
+      features: product.features || [],
+      technical_specs: product.technical_specs || [],
+      additional_info: product.additional_info || [],
+      seo_info: product.seo_info || null,
+      structured_data: product.structured_data || null,
+    })) || [];
+
+    if (filters?.include_seo) {
+      processedData = processedData.map((product: any) => {
+        const blogPostCount = productBlogPostCounts.get(product.id) || 0;
+        const richDescription = product.rich_description || "";
+        const words = richDescription.split(/\s+/).filter(Boolean);
+        const wordCount = words.length;
+        const primaryKeyword = product.seo_info?.primary_keyword || product.name;
+        const keywordCount = (richDescription.match(new RegExp(primaryKeyword, "gi")) || []).length;
+        const keywordDensity = wordCount > 0 ? parseFloat(((keywordCount / wordCount) * 100).toFixed(2)) : 0;
+
+        let seoScore = 0;
+        if (product.seo_info?.meta_description && product.seo_info.meta_description.trim().length > 0) {
+          seoScore += 20;
+        }
+
+        if (blogPostCount >= 3) {
+          seoScore += 30;
+        } else if (blogPostCount > 0) {
+          seoScore += 20;
+        }
+
+        if (keywordDensity >= 1.5 && keywordDensity <= 2.5) {
+          seoScore += 30;
+        }
+
+        if (product.views > 100) {
+          seoScore += 10;
+        }
+
+        const imagesWithAltText = (product.images || []).every((img: ImageInfo) => img.alt && img.alt.trim().length > 0);
+        if (imagesWithAltText) {
+          seoScore += 10;
+        }
+
+        return {
+          ...product,
+          has_meta_description: !!product.seo_info?.meta_description && product.seo_info.meta_description.trim().length > 0,
+          has_blog_content: blogPostCount > 0,
+          seo_score: seoScore,
+          keyword_density: keywordDensity,
+        };
+      });
+    }
 
     return processedData as Product[]
   } catch (error) {

@@ -30,6 +30,7 @@ interface SEOProduct {
 interface SEOTask {
   id: string;
   product_id: string;
+  product_slug: string;
   product_name: string;
   task: string;
   status: 'pending' | 'in_progress' | 'completed';
@@ -73,6 +74,9 @@ export default function SEODashboardPage() {
   const fetchSEOData = async () => {
     try {
       setLoading(true);
+
+      // Generate tasks before fetching
+      await fetch('/api/admin/seo-tasks/generate', { method: 'POST' });
 
       // Fetch products with SEO metrics
       const productsResponse = await fetch('/api/products?include_seo=true');
@@ -418,7 +422,7 @@ JSON FORMAT:
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{optimizedProducts}</div>
-            <Progress value={(optimizedProducts / totalProducts) * 100} className="mt-2" />
+            <Progress value={totalProducts > 0 ? (optimizedProducts / totalProducts) * 100 : 0} className="mt-2" />
           </CardContent>
         </Card>
 
@@ -561,51 +565,75 @@ JSON FORMAT:
         {/* SEO Tasks */}
         <TabsContent value="tasks" className="space-y-6">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5" />
                 SEO Görev Takibi
               </CardTitle>
+              <Button onClick={fetchSEOData} size="sm" variant="outline">
+                <Zap className="h-4 w-4 mr-2" />
+                Görevleri Yenile ve Üret
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {currentTasks.map((task) => (
-                  <div key={task.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
+                  <div key={task.id} className="flex items-start justify-between p-4 border rounded-lg">
+                    <div className="flex items-start gap-4">
                       <Checkbox
+                        className="mt-1"
                         checked={task.status === 'completed'}
                         onCheckedChange={(checked) => {
                           updateTaskStatus(task.id, checked ? 'completed' : 'pending');
                         }}
                       />
-                      <div>
-                        <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
                           <h4 className="font-medium text-slate-900">{task.task}</h4>
                           <Badge className={getPriorityColor(task.priority)}>
                             {task.priority}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600">{task.product_name}</p>
+                        <p className="text-sm text-gray-600">
+                          <a
+                            href={`/products/${task.product_slug}`}
+                            className="hover:underline"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {task.product_name}
+                          </a>
+                        </p>
                         {task.notes && (
-                          <p className="text-xs text-gray-500 mt-1">{task.notes}</p>
+                          <p className="text-xs text-gray-500 mt-2 bg-gray-50 p-2 rounded-md">{task.notes}</p>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={
-                          task.status === 'completed' ? 'default' :
-                          task.status === 'in_progress' ? 'secondary' : 'outline'
-                        }
-                      >
-                        {task.status === 'completed' && <CheckCircle className="h-3 w-3 mr-1" />}
-                        {task.status === 'in_progress' && <Clock className="h-3 w-3 mr-1" />}
-                        {task.status === 'pending' && <AlertCircle className="h-3 w-3 mr-1" />}
-                        {task.status === 'completed' ? 'Tamamlandı' :
-                         task.status === 'in_progress' ? 'Devam Ediyor' : 'Bekliyor'}
-                      </Badge>
-                      <span className="text-xs text-gray-500">{task.due_date}</span>
+                    <div className="flex flex-col items-end gap-2 text-xs text-gray-500">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant={
+                            task.status === 'completed' ? 'default' :
+                            task.status === 'in_progress' ? 'secondary' : 'outline'
+                          }
+                        >
+                          {task.status === 'completed' && <CheckCircle className="h-3 w-3 mr-1" />}
+                          {task.status === 'in_progress' && <Clock className="h-3 w-3 mr-1" />}
+                          {task.status === 'pending' && <AlertCircle className="h-3 w-3 mr-1" />}
+                          {task.status === 'completed' ? 'Tamamlandı' :
+                           task.status === 'in_progress' ? 'Devam Ediyor' : 'Bekliyor'}
+                        </Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateTaskStatus(task.id, 'completed')}
+                          disabled={task.status === 'completed'}
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <span>Bitiş: {task.due_date}</span>
                     </div>
                   </div>
                 ))}

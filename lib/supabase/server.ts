@@ -1,27 +1,35 @@
+
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-// This client is for authenticated user sessions on the server-side
 export function createClient() {
   const cookieStore = cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // Use anon key for user sessions
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        async get(name: string) {
+          return (await cookieStore).get(name)?.value;
         },
-        set(name: string, value: string, options: CookieOptions) {
-          // This 'set' is typically handled by Next.js when using createServerClient
-          // in a Server Component. We can provide a no-op or log for debugging.
-          // For Route Handlers or Server Actions, cookieStore.set would be used directly.
-          console.warn('Supabase server client: Attempted to set cookie from a read-only context.');
+        async set(name: string, value: string, options: CookieOptions) {
+          try {
+            (await cookieStore).set({ name, value, ...options });
+          } catch (error) {
+            // The `set` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
         },
-        remove(name: string, options: CookieOptions) {
-          // Similar to set, this is usually handled by Next.js.
-          console.warn('Supabase server client: Attempted to remove cookie from a read-only context.');
+        async remove(name: string, options: CookieOptions) {
+          try {
+            (await cookieStore).set({ name, value: '', ...options });
+          } catch (error) {
+            // The `set` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
         },
       },
     }

@@ -12,12 +12,14 @@ export async function GET(request: NextRequest) {
     const isFeatured = searchParams.get("is_featured")
     const sortBy = searchParams.get("sortBy")
     const sortOrder = searchParams.get("sortOrder")
+    const include_seo = searchParams.get("include_seo") === 'true'
 
-    console.log("API: GET /api/products called with filters:", { category, search, isFeatured, sortBy, sortOrder })
+    console.log("API: GET /api/products called with filters:", { category, search, isFeatured, sortBy, sortOrder, include_seo })
 
-    const filters: { category?: string; search?: string; is_featured?: boolean; sortBy?: string; sortOrder?: string; } = {}
+    const filters: { category?: string; search?: string; is_featured?: boolean; sortBy?: string; sortOrder?: string; include_seo?: boolean; } = {}
     if (category && category !== "all") filters.category = category
     if (search) filters.search = search
+    if (include_seo) filters.include_seo = true
     if (isFeatured === "true") filters.is_featured = true
     if (sortBy) filters.sortBy = sortBy
     if (sortOrder) filters.sortOrder = sortOrder
