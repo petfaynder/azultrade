@@ -50,6 +50,7 @@ export async function POST(request: NextRequest) {
         "negative_keywords": ["cheap", "free", "discount", "competitor brand names"]
       },
       "content_structure": {
+        "featured_image_prompt": `Generate a professional, high-resolution stock photo URL for a blog post about "${topic}". The image should be relevant to international trade, logistics, or the specific industry of the products.`,
         "blog_post_title_suggestions": [
           `Everything You Need to Know About ${topic}`,
           `The Best ${topic} Solutions and Their Prices`,
@@ -65,7 +66,8 @@ export async function POST(request: NextRequest) {
           {
             "type": "h2",
             "title": `What is ${topic} and Why is it Crucial for Your Business?`,
-            "instruction": "Provide a clear definition of the topic and explain its importance for businesses with 2-3 concrete examples. Naturally incorporate terms from the 'secondary_keywords' and 'lsi_keywords' lists in this section."
+            "instruction": "Provide a clear definition of the topic and explain its importance for businesses with 2-3 concrete examples. Naturally incorporate terms from the 'secondary_keywords' and 'lsi_keywords' lists in this section. Include a relevant stock photo URL after the first paragraph.",
+            "image_prompt": `Find a stock photo URL representing the concept of "${topic}" in a business or industrial context.`
           },
           {
             "type": "h2",

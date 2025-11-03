@@ -52,7 +52,7 @@ const jsonContentToHtml = (contentBlocks: BlogPostJson['content']): string => {
         break;
       case 'list':
         if (block.items && Array.isArray(block.items)) {
-          html += `<ul${block.style === 'ordered' ? ' type="1"' : ''}>`;
+          html += `<ul>`; // Always use ul for simplicity, styling can handle appearance
           block.items.forEach(item => {
             html += `<li>${item}</li>`;
           });
@@ -61,25 +61,25 @@ const jsonContentToHtml = (contentBlocks: BlogPostJson['content']): string => {
         break;
       case 'image':
         if (block.url) {
-          html += `<img src="${block.url}" alt="${block.alt || ''}" />`;
+          // Add styling for better presentation
+          html += `<figure class="my-4"><img src="${block.url}" alt="${block.alt || ''}" class="rounded-lg shadow-md mx-auto" /><figcaption class="text-center text-sm text-gray-500 mt-2">${block.alt || ''}</figcaption></figure>`;
         }
         break;
       case 'quote':
         if (block.text) {
-          html += `<blockquote><p>${block.text}</p>${block.author ? `<cite>${block.author}</cite>` : ''}</blockquote>`;
+          html += `<blockquote class="border-l-4 border-gray-300 pl-4 italic my-4"><p>${block.text}</p>${block.author ? `<cite class="block text-right not-italic">- ${block.author}</cite>` : ''}</blockquote>`;
         }
         break;
       case 'faq':
         if (block.questions && Array.isArray(block.questions)) {
-          html += `<div class="faq-section">`; // Add a wrapper for styling if needed
+          html += `<div class="faq-section my-4">`;
           block.questions.forEach(faq => {
-            html += `<h4>${faq.question || ''}</h4><p>${faq.answer || ''}</p>`;
+            html += `<h4 class="font-semibold">${faq.question || ''}</h4><p class="mb-2">${faq.answer || ''}</p>`;
           });
           html += `</div>`;
         }
         break;
       default:
-        // Fallback for unknown types, or log a warning
         if (block.text) {
           html += `<p>${block.text}</p>`;
         }
