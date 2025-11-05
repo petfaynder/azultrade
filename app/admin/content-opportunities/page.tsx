@@ -47,7 +47,8 @@ export default function ContentOpportunitiesPage() {
   const fetchTopics = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/content-opportunities');
+      // Add a cache-busting parameter to the URL
+      const response = await fetch(`/api/admin/content-opportunities?time=${new Date().getTime()}`);
       if (!response.ok) throw new Error('Failed to fetch topics');
       const data = await response.json();
       setTopics(data);
