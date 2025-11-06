@@ -1,3 +1,4 @@
+"use client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -7,6 +8,14 @@ import Link from "next/link"
 import Image from "next/image"
 import { getProducts, getBlogPosts } from "@/lib/database"
 import { FadeInSection } from "@/components/fade-in-section"
+import dynamic from "next/dynamic"
+import { useEffect, useState } from "react"
+
+const AccordionDynamic = dynamic(() => import("@/components/ui/accordion").then(mod => mod.Accordion), { ssr: false })
+const AccordionContentDynamic = dynamic(() => import("@/components/ui/accordion").then(mod => mod.AccordionContent), { ssr: false })
+const AccordionItemDynamic = dynamic(() => import("@/components/ui/accordion").then(mod => mod.AccordionItem), { ssr: false })
+const AccordionTriggerDynamic = dynamic(() => import("@/components/ui/accordion").then(mod => mod.AccordionTrigger), { ssr: false })
+
 
 async function getFeaturedProducts() {
   try {
@@ -32,9 +41,19 @@ async function getLatestBlogPosts() {
   }
 }
 
-export default async function HomePage() {
-  const featuredProducts = await getFeaturedProducts()
-  const latestBlogPosts = await getLatestBlogPosts()
+export default function HomePage() {
+  const [featuredProducts, setFeaturedProducts] = useState<any[]>([])
+  const [latestBlogPosts, setLatestBlogPosts] = useState<any[]>([])
+
+  useEffect(() => {
+    async function fetchData() {
+      const products = await getFeaturedProducts()
+      const posts = await getLatestBlogPosts()
+      setFeaturedProducts(products)
+      setLatestBlogPosts(posts)
+    }
+    fetchData()
+  }, [])
 
   return (
     <div className="min-h-screen">
@@ -511,43 +530,43 @@ export default async function HomePage() {
               </p>
             </div>
  
-            <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto">
-              <AccordionItem value="item-1">
-                <AccordionTrigger className="text-lg font-semibold text-slate-900 hover:no-underline">
+            <AccordionDynamic type="single" collapsible className="w-full max-w-3xl mx-auto">
+              <AccordionItemDynamic value="item-1">
+                <AccordionTriggerDynamic className="text-lg font-semibold text-slate-900 hover:no-underline">
                   What types of products do you offer?
-                </AccordionTrigger>
-                <AccordionContent className="text-slate-700">
+                </AccordionTriggerDynamic>
+                <AccordionContentDynamic className="text-slate-700">
                   We specialize in a wide range of industrial equipment, machinery, and raw materials. Our catalog
                   includes products for manufacturing, construction, agriculture, and more.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-2">
-                <AccordionTrigger className="text-lg font-semibold text-slate-900 hover:no-underline">
+                </AccordionContentDynamic>
+              </AccordionItemDynamic>
+              <AccordionItemDynamic value="item-2">
+                <AccordionTriggerDynamic className="text-lg font-semibold text-slate-900 hover:no-underline">
                   How do you ensure product quality?
-                </AccordionTrigger>
-                <AccordionContent className="text-slate-700">
+                </AccordionTriggerDynamic>
+                <AccordionContentDynamic className="text-slate-700">
                   We have a rigorous quality assurance process, including supplier vetting, product inspections, and
                   adherence to international standards.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-3">
-                <AccordionTrigger className="text-lg font-semibold text-slate-900 hover:no-underline">
+                </AccordionContentDynamic>
+              </AccordionItemDynamic>
+              <AccordionItemDynamic value="item-3">
+                <AccordionTriggerDynamic className="text-lg font-semibold text-slate-900 hover:no-underline">
                   What countries do you operate in?
-                </AccordionTrigger>
-                <AccordionContent className="text-slate-700">
+                </AccordionTriggerDynamic>
+                <AccordionContentDynamic className="text-slate-700">
                   Azul Global Trade has a vast network spanning over 50 countries, facilitating trade across continents.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item-4">
-                <AccordionTrigger className="text-lg font-semibold text-slate-900 hover:no-underline">
+                </AccordionContentDynamic>
+              </AccordionItemDynamic>
+              <AccordionItemDynamic value="item-4">
+                <AccordionTriggerDynamic className="text-lg font-semibold text-slate-900 hover:no-underline">
                   How can I get a quote for a product?
-                </AccordionTrigger>
-                <AccordionContent className="text-slate-700">
+                </AccordionTriggerDynamic>
+                <AccordionContentDynamic className="text-slate-700">
                   You can request a quote directly from any product page or by contacting our sales team through the
                   "Contact Sales" button.
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                </AccordionContentDynamic>
+              </AccordionItemDynamic>
+            </AccordionDynamic>
           </div>
         </section>
       </FadeInSection>

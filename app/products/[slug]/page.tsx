@@ -11,6 +11,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Eye, Play, X } from "lucide-react"
 import { getProductBySlug, incrementProductViews, getProducts } from "@/lib/database"
+import dynamic from "next/dynamic"
+
+const DialogDynamic = dynamic(() => import("@/components/ui/dialog").then(mod => mod.Dialog), { ssr: false })
+const DialogContentDynamic = dynamic(() => import("@/components/ui/dialog").then(mod => mod.DialogContent), { ssr: false })
+const DialogHeaderDynamic = dynamic(() => import("@/components/ui/dialog").then(mod => mod.DialogHeader), { ssr: false })
+const DialogTitleDynamic = dynamic(() => import("@/components/ui/dialog").then(mod => mod.DialogTitle), { ssr: false })
+const TabsDynamic = dynamic(() => import("@/components/ui/tabs").then(mod => mod.Tabs), { ssr: false })
+const TabsContentDynamic = dynamic(() => import("@/components/ui/tabs").then(mod => mod.TabsContent), { ssr: false })
+const TabsListDynamic = dynamic(() => import("@/components/ui/tabs").then(mod => mod.TabsList), { ssr: false })
+const TabsTriggerDynamic = dynamic(() => import("@/components/ui/tabs").then(mod => mod.TabsTrigger), { ssr: false })
 import type { Product, ImageInfo } from "@/lib/database" // ImageInfo'yu import et
 import ProductActions from "@/components/product-actions"
 import JsonLd from "@/components/seo/JsonLd"
@@ -384,17 +394,17 @@ export default function ProductPage() {
         {/* Technical Specs and Additional Info Tabs */}
         {(product.technical_specs.length > 0 || product.additional_info.length > 0) && (
           <div className="mt-16">
-            <Tabs defaultValue={product.technical_specs.length > 0 ? "technical-specs" : "additional-info"}>
-              <TabsList className="grid w-full grid-cols-2">
+            <TabsDynamic defaultValue={product.technical_specs.length > 0 ? "technical-specs" : "additional-info"}>
+              <TabsListDynamic className="grid w-full grid-cols-2">
                 {product.technical_specs.length > 0 && (
-                  <TabsTrigger value="technical-specs">Technical Specifications</TabsTrigger>
+                  <TabsTriggerDynamic value="technical-specs">Technical Specifications</TabsTriggerDynamic>
                 )}
                 {product.additional_info.length > 0 && (
-                  <TabsTrigger value="additional-info">Additional Information</TabsTrigger>
+                  <TabsTriggerDynamic value="additional-info">Additional Information</TabsTriggerDynamic>
                 )}
-              </TabsList>
+              </TabsListDynamic>
               {product.technical_specs.length > 0 && (
-                <TabsContent value="technical-specs" className="mt-4">
+                <TabsContentDynamic value="technical-specs" className="mt-4">
                   <Card>
                     <CardContent className="p-6">
                       <h3 className="text-lg font-semibold text-slate-900 mb-4">Technical Specifications</h3>
@@ -408,10 +418,10 @@ export default function ProductPage() {
                       </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </TabsContentDynamic>
               )}
               {product.additional_info.length > 0 && (
-                <TabsContent value="additional-info" className="mt-4">
+                <TabsContentDynamic value="additional-info" className="mt-4">
                   <Card>
                     <CardContent className="p-6">
                       <h3 className="text-lg font-semibold text-slate-900 mb-4">Additional Information</h3>
@@ -425,9 +435,9 @@ export default function ProductPage() {
                       </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </TabsContentDynamic>
               )}
-            </Tabs>
+            </TabsDynamic>
           </div>
         )}
 
@@ -466,14 +476,14 @@ export default function ProductPage() {
       </div>
 
       {/* Image Gallery Dialog */}
-      <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
-          <DialogHeader className="absolute top-4 right-4 z-10">
-            <DialogTitle className="sr-only">Product Image Gallery</DialogTitle> {/* Hidden title for accessibility */}
+      <DialogDynamic open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>
+        <DialogContentDynamic className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
+          <DialogHeaderDynamic className="absolute top-4 right-4 z-10">
+            <DialogTitleDynamic className="sr-only">Product Image Gallery</DialogTitleDynamic> {/* Hidden title for accessibility */}
             <Button variant="ghost" size="icon" onClick={() => setIsGalleryOpen(false)} className="text-white hover:bg-white/20">
               <X className="h-6 w-6" />
             </Button>
-          </DialogHeader>
+          </DialogHeaderDynamic>
           <div className="relative w-full h-full flex items-center justify-center bg-black">
             {product.images && product.images.length > 0 && product.images[currentGalleryIndex]?.url && (
               <>
@@ -514,8 +524,8 @@ export default function ProductPage() {
               />
             ))}
           </div>
-        </DialogContent>
-      </Dialog>
+        </DialogContentDynamic>
+      </DialogDynamic>
     </div>
   )
 }
